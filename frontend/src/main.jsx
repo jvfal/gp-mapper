@@ -24,6 +24,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./styles.css";
 import { BoardAccessPanel } from "./BoardAccessPanel";
+import { AccountMenu } from "./AccountMenu";
 import { BoardLibrary, BoardName } from "./BoardLibrary";
 import { useBoardRealtime } from "./useBoardRealtime";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -54,7 +55,7 @@ const initialViewport = {
   y: 0,
   zoom: 1,
 };
-function App({ board, onBack, onReload }) {
+function App({ board, user, onBack, onReload }) {
   const { t } = useTranslation("mapper");
   const [boardMetadata, setBoardMetadata] = useState(board);
   const [showAccess, setShowAccess] = useState(false);
@@ -531,6 +532,7 @@ function App({ board, onBack, onReload }) {
             </a>
             <div className="header-right">
               <LanguageSwitcher />
+              <AccountMenu user={user} />
               <button className="text-button" onClick={leaveBoard}>
                 {t("library.back")}
               </button>
@@ -542,10 +544,10 @@ function App({ board, onBack, onReload }) {
                     : "sharing.private",
                 )}
               </span>
-              <a className="admin-link" href="/admin/" title={t("page.admin")}>
+              {user.isStaff && <a className="admin-link" href="/admin/" title={t("page.admin")}>
                 Admin
                 <Icon name="arrow" size={15} />
-              </a>
+              </a>}
             </div>
           </header>
 

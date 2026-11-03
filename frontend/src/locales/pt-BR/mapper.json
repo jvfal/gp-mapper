@@ -16,7 +16,7 @@
     "failed": "Falha ao salvar · Tente novamente",
     "saved": "Alterações salvas",
     "saving": "Salvando...",
-    "session": "Sessão expirada · Entre pelo /admin",
+    "session": "Sessão expirada · Entre novamente",
     "conflict": "Mapa alterado em outra aba · Reabra a versão salva",
     "denied": "Seu acesso mudou · As alterações não foram salvas",
     "connecting": "Conectando…",
@@ -185,9 +185,9 @@
     "loadError": "Não foi possível carregar seus mapas.",
     "openError": "Não foi possível abrir esse mapa.",
     "createError": "Não foi possível criar o mapa. Confira o nome e tente novamente.",
-    "sessionError": "Sua sessão expirou. Entre novamente pelo /admin e atualize a página.",
+    "sessionError": "Sua sessão expirou. Entre novamente e atualize a página.",
     "signInTitle": "Entre para acessar seus mapas",
-    "signInHint": "Por enquanto, use sua conta no /admin. Depois de entrar, volte aqui para criar e abrir seus mapas.",
+    "signInHint": "Entre com sua conta do Discord para criar mapas e explorar com a guild.",
     "signIn": "Entrar pelo admin",
     "createTitle": "Uma nova exploração",
     "createHint": "Crie um mapa pessoal ou compartilhe uma exploração com a guild.",
@@ -253,5 +253,17 @@
     "connecting": "Conectando…",
     "reconnecting": "Reconectando…",
     "online": "Ao vivo"
+  },
+  "auth": {
+    "discord": "Entrar com Discord",
+    "signOut": "Sair",
+    "unavailable": "O login com Discord está indisponível no momento.",
+    "errors": {
+      "cancelled": "Você cancelou a entrada pelo Discord.",
+      "failed": "Não foi possível entrar com Discord. Tente novamente.",
+      "expired": "Essa tentativa de login expirou. Clique em entrar novamente.",
+      "unavailable": "O login com Discord está indisponível no momento.",
+      "inactive": "Esta conta está desativada."
+    }
   }
 }

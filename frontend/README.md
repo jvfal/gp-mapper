@@ -110,7 +110,9 @@ owner can rename or manage access. Private boards ignore all guild grants.
 Viewer mode allows inspecting, zooming, panning and exporting, with no database
 writes. Existing boards remain private after migration; new boards default to
 guild sharing in the UI, with everyone able to view and only the owner editing.
-Discord sign-in and membership management are later work.
+Discord sign-in is available without guild or role restrictions; configure it
+with the [Discord login guide](../docs/discord-login.md). Membership management
+is later work.
 
 Deployment must forward WebSocket upgrades for `/ws/` to Uvicorn, alongside
 ordinary HTTP. All web instances must share the PostgreSQL database and Redis

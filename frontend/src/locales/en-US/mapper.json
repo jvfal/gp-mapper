@@ -16,7 +16,7 @@
     "failed": "Save failed · Please retry",
     "saved": "Changes saved",
     "saving": "Saving...",
-    "session": "Session expired · Sign in through /admin",
+    "session": "Session expired · Sign in again",
     "conflict": "Map changed in another tab · Reopen the saved version",
     "denied": "Your access changed · Changes were not saved",
     "connecting": "Connecting…",
@@ -185,9 +185,9 @@
     "loadError": "Could not load your maps.",
     "openError": "Could not open this map.",
     "createError": "Could not create the map. Check its name and try again.",
-    "sessionError": "Your session expired. Sign in through /admin and refresh the page.",
+    "sessionError": "Your session expired. Sign in again and refresh the page.",
     "signInTitle": "Sign in to access your maps",
-    "signInHint": "For now, use your /admin account. After signing in, return here to create and open your maps.",
+    "signInHint": "Sign in with your Discord account to create maps and explore with the guild.",
     "signIn": "Sign in through admin",
     "createTitle": "A new exploration",
     "createHint": "Create a personal map or share an exploration with the guild.",
@@ -253,5 +253,17 @@
     "connecting": "Connecting…",
     "reconnecting": "Reconnecting…",
     "online": "Live"
+  },
+  "auth": {
+    "discord": "Sign in with Discord",
+    "signOut": "Sign out",
+    "unavailable": "Discord sign-in is currently unavailable.",
+    "errors": {
+      "cancelled": "You cancelled Discord sign-in.",
+      "failed": "Could not sign in with Discord. Please try again.",
+      "expired": "This sign-in attempt expired. Please start again.",
+      "unavailable": "Discord sign-in is currently unavailable.",
+      "inactive": "This account is inactive."
+    }
   }
 }

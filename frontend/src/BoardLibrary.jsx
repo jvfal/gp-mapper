@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Icon } from "./icons";
 import { boardApi } from "./boardApi";
+import { AccountMenu } from "./AccountMenu";
 
 export function BoardLibrary({ Editor }) {
   const { t, i18n } = useTranslation("mapper");
@@ -16,6 +17,13 @@ export function BoardLibrary({ Editor }) {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
+    const url = new URL(location.href);
+    const authError = url.searchParams.get("auth_error");
+    if (["cancelled", "failed", "expired", "unavailable", "inactive"].includes(authError)) {
+      setError("auth.errors." + authError);
+      url.searchParams.delete("auth_error");
+      history.replaceState(null, "", url.pathname + url.search);
+    }
     const controller = new AbortController();
     boardApi("", { signal: controller.signal })
       .then(async (result) => {
@@ -93,7 +101,7 @@ export function BoardLibrary({ Editor }) {
   if (active)
     return (
       <ReactFlowProvider key={`${active.id}:${active.revision}`}>
-        <Editor board={active} onBack={back} onReload={() => open(active)} />
+        <Editor board={active} user={data.user} onBack={back} onReload={() => open(active)} />
       </ReactFlowProvider>
     );
 
@@ -111,9 +119,10 @@ export function BoardLibrary({ Editor }) {
         </a>
         <div className="header-right">
           <LanguageSwitcher />
-          <a className="admin-link" href="/admin/">
+          <AccountMenu user={data?.user} />
+          {data?.user?.isStaff && <a className="admin-link" href="/admin/">
             Admin <Icon name="arrow" size={15} />
-          </a>
+          </a>}
         </div>
       </header>
       <main className="board-library">
@@ -149,9 +158,11 @@ export function BoardLibrary({ Editor }) {
             <Icon name="compass" size={32} />
             <h2>{t("library.signInTitle")}</h2>
             <p>{t("library.signInHint")}</p>
-            <a className="button primary" href="/admin/login/?next=/">
-              {t("library.signIn")}
-            </a>
+            {data.auth.discordEnabled ? <a className="button discord-button" href={`/auth/discord/login/?next=${encodeURIComponent(location.pathname + location.search)}`}>
+              <Icon name="link" size={18} />{t("auth.discord")}
+            </a> : <button className="button discord-button" disabled>{t("auth.discord")}</button>}
+            {!data.auth.discordEnabled && <p className="muted">{t("auth.unavailable")}</p>}
+            <a className="text-button" href="/admin/login/?next=/">{t("library.signIn")}</a>
           </section>
         )}
         {data?.user && (

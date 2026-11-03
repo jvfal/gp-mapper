@@ -16,6 +16,7 @@ from catalog.models import RoadMap
 from .models import Board, BoardAccess, BoardConnection, BoardNode
 from .permissions import permissions, visible_boards
 from .broadcast import publish_board
+from .authentication import display_name, session_info
 
 
 def summary(board, user):
@@ -149,10 +150,10 @@ def replace_state(board, validated):
 @require_http_methods(['GET', 'POST'])
 def boards(request):
     if not request.user.is_authenticated:
-        return JsonResponse({'user': None, 'boards': []}) if request.method == 'GET' else JsonResponse({'error': 'authentication_required'}, status=401)
+        return JsonResponse({**session_info(request), 'boards': []}) if request.method == 'GET' else JsonResponse({'error': 'authentication_required'}, status=401)
     if request.method == 'GET':
         queryset = visible_boards(request.user).annotate(node_count=Count('nodes', distinct=True), connection_count=Count('connections', distinct=True))
-        return JsonResponse({'user': {'id': request.user.pk, 'name': request.user.get_username()},
+        return JsonResponse({**session_info(request),
                              'boards': [summary(board, request.user) for board in queryset]})
     try:
         data = body(request)
@@ -203,10 +204,10 @@ def access_settings(board):
     grants = {grant.user_id: grant for grant in board.access_grants.all()}
     return {
         'scope': board.scope, 'guildCanView': board.guild_can_view, 'guildCanEdit': board.guild_can_edit,
-        'users': [{'id': user.pk, 'name': user.get_username(),
+        'users': [{'id': user.pk, 'name': display_name(user),
                    'canView': bool(grants.get(user.pk) and grants[user.pk].can_view),
                    'canEdit': bool(grants.get(user.pk) and grants[user.pk].can_edit)}
-                  for user in get_user_model().objects.filter(is_active=True).exclude(pk=board.owner_id).order_by('username')],
+                  for user in get_user_model().objects.filter(is_active=True).exclude(pk=board.owner_id).select_related('discord_account').order_by('username')],
     }
 
 

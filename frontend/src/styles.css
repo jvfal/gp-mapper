@@ -429,6 +429,14 @@ p {
   align-items: center;
   gap: 26px;
 }
+.account-menu { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.account-menu img { border-radius: 50%; }
+.account-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b4bec5; }
+.account-menu form { margin: 0; }
+.button.discord-button { background: #5865f2; color: white; }
+.button.discord-button:hover:not(:disabled) { background: #4752c4; }
+@media (max-width: 900px) { .account-name { display: none; } .header-right { gap: 12px; } }
+@media (max-width: 540px) { .account-menu img { display: none; } .header-right { gap: 8px; } }
 .language-switcher {
   max-width: 145px;
   border: 1px solid #343c42;
