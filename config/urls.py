@@ -17,6 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from catalog.views import map_catalog
+from mapper.views import index
+
 urlpatterns = [
+    path('', index, name='mapper'),
+    path('api/catalog/maps/', map_catalog, name='map-catalog'),
     path('admin/', admin.site.urls),
 ]

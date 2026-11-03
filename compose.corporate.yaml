@@ -6,9 +6,12 @@ services:
       secrets:
         - pip_ca
         - pip_config
+        - npm_config
 
 secrets:
   pip_ca:
     file: ./.certs/windows-ca.pem
   pip_config:
     file: ./.pip/pip.conf
+  npm_config:
+    file: ./.npm/npmrc

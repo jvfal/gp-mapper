@@ -11,3 +11,7 @@ __pycache__/
 !.env.docker.example
 staticfiles/
 node_modules/
+static/mapper/
+frontend/test-results/
+frontend/playwright-report/
+.npm/

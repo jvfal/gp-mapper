@@ -1,3 +1,19 @@
+FROM node:22-slim AS frontend
+
+WORKDIR /build/frontend
+COPY frontend/package*.json ./
+RUN --mount=type=secret,id=pip_ca \
+    --mount=type=secret,id=npm_config \
+    if [ -f /run/secrets/npm_config ]; then \
+        export NPM_CONFIG_USERCONFIG=/run/secrets/npm_config; \
+    fi; \
+    if [ -f /run/secrets/pip_ca ]; then \
+        export NODE_EXTRA_CA_CERTS=/run/secrets/pip_ca; \
+    fi; \
+    npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -19,6 +35,7 @@ RUN --mount=type=secret,id=pip_ca \
 
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 COPY --chown=app:app . .
+COPY --from=frontend --chown=app:app /build/static/mapper ./static/mapper
 RUN mkdir -p /app/staticfiles && chown app:app /app/staticfiles
 
 USER app

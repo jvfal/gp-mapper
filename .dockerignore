@@ -12,6 +12,11 @@
 *.sqlite3
 staticfiles
 node_modules
+**/node_modules
+static/mapper
+frontend/test-results
+frontend/playwright-report
+.npm
 .agents
 .codex
 .aws
