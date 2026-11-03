@@ -29,7 +29,10 @@ export function useMapFullscreen(ref) {
   useEffect(() => {
     if (!focusMode) return;
     const escape = (event) => {
-      if (event.key === "Escape" && !document.querySelector("dialog[open]"))
+      if (
+        event.key === "Escape" &&
+        !document.querySelector("[data-connection-card]")
+      )
         setFocusMode(false);
     };
     document.addEventListener("keydown", escape);

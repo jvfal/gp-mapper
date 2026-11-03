@@ -68,8 +68,8 @@ test("native fullscreen keeps the catalog, connections, time editing and toolbar
   await expect(page.locator(".edge-time")).toHaveText("3h 00m");
   await expect(board.getByRole("status")).toContainText("Conexão atualizada");
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar quadro" }).click();
-  expect((await download).suggestedFilename()).toBe("avalon-roads.json");
+  await page.getByRole("button", { name: "Baixar imagem do mapa" }).click();
+  expect((await download).suggestedFilename()).toBe("avalon-roads.png");
   await page.getByRole("button", { name: "Remover seleção" }).click();
   await expect(page.locator(".edge-time")).toHaveCount(0);
   await page

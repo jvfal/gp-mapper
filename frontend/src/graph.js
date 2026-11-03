@@ -1,6 +1,18 @@
 export const STORAGE_KEY = "avalon-roads:board:v1";
 export const nodeId = (mapId) => `map-${mapId}`;
 export const HANDLE_IDS = ["top", "bottom", "left", "right"];
+export const HANDLE_SIZE = 24;
+
+export function featureRows(features) {
+  const count = Math.ceil(features.length / 5);
+  if (!count) return [];
+  const base = Math.floor(features.length / count);
+  const remainder = features.length % count;
+  return Array.from({ length: count }, (_, index) => {
+    const start = index * base + Math.min(index, remainder);
+    return features.slice(start, start + base + (index < remainder ? 1 : 0));
+  });
+}
 
 export function matchesMapName(name, query) {
   const normalize = (value) =>
@@ -35,9 +47,9 @@ export function connectionExists(edges, source, target, exceptId = null) {
   );
 }
 
-export function remainingTime(expiresAt, now = Date.now()) {
+export function remainingTime(expiresAt, now = Date.now(), expiredLabel = "Expirada") {
   const minutes = Math.max(0, Math.ceil((expiresAt - now) / 60_000));
-  if (!minutes) return "Expirada";
+  if (!minutes) return expiredLabel;
   const hours = Math.floor(minutes / 60);
   return hours
     ? `${hours}h ${String(minutes % 60).padStart(2, "0")}m`

@@ -1,0 +1,14 @@
+{
+  "language": "Language",
+  "actions": {
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "closeNotice": "Dismiss notification",
+    "add": "Add",
+    "locate": "Locate"
+  },
+  "time": {
+    "hours": "Hours",
+    "minutes": "Minutes"
+  }
+}

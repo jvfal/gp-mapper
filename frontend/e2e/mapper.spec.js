@@ -1,24 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function selectMap(page, label, name) {
-  const input = page.getByRole("combobox", { name: label, exact: true });
-  await input.fill(name);
-  await page.getByRole("option", { name: new RegExp(name) }).click();
-}
-
-async function createConnection(
-  page,
-  from = "Cases-Ugumlos",
-  to = "Casitos-Alieam",
-) {
-  await selectMap(page, "De", from);
-  await selectMap(page, "Para", to);
-  await page
-    .getByRole("button", { name: "Criar conexão", exact: true })
-    .click();
-  await expect(page.locator(".road-card")).toHaveCount(2);
-  await expect(page.locator(".edge-time")).toHaveCount(1);
-}
+import { createConnection, dragHandles } from "./helpers";
 
 test("create, inspect, edit, persist, export and remove a connection", async ({
   page,
@@ -54,8 +35,11 @@ test("create, inspect, edit, persist, export and remove a connection", async ({
   await expect(
     page.getByRole("heading", { name: "Editar conexão", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Horas restantes").selectOption("2");
-  await page.getByLabel("Minutos restantes").selectOption("15");
+  await page.getByRole("dialog").getByLabel("Horas", { exact: true }).fill("2");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Minutos", { exact: true })
+    .fill("15");
   await page.getByRole("button", { name: "Salvar conexão" }).click();
   await expect(page.locator(".edge-time")).toHaveText("2h 15m");
   await expect(
@@ -65,8 +49,8 @@ test("create, inspect, edit, persist, export and remove a connection", async ({
   await expect(page.locator(".road-card")).toHaveCount(2);
   await expect(page.locator(".edge-time")).toHaveText("2h 15m");
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Exportar quadro" }).click();
-  expect((await download).suggestedFilename()).toBe("avalon-roads.json");
+  await page.getByRole("button", { name: "Baixar imagem do mapa" }).click();
+  expect((await download).suggestedFilename()).toBe("avalon-roads.png");
   await page.locator(".edge-time").click();
   await page.getByRole("button", { name: "Remover seleção" }).click();
   await expect(page.locator(".edge-time")).toHaveCount(0);
@@ -82,19 +66,12 @@ test("reject duplicates and self-connections without adding graph elements", asy
     page.getByRole("button", { name: "Escolher primeiro mapa" }),
   ).toBeVisible();
   await createConnection(page);
-  await page.getByRole("button", { name: "Inverter origem e destino" }).click();
-  await page
-    .getByRole("button", { name: "Criar conexão", exact: true })
-    .click();
+  await dragHandles(page, "map-2", "map-1", "top", "bottom");
   await expect(page.getByRole("status")).toContainText(
     "Essa conexão já existe",
   );
   await expect(page.locator(".edge-time")).toHaveCount(1);
-  await selectMap(page, "De", "Cases-Ugumlos");
-  await selectMap(page, "Para", "Cases-Ugumlos");
-  await page
-    .getByRole("button", { name: "Criar conexão", exact: true })
-    .click();
+  await dragHandles(page, "map-1", "map-1", "bottom", "left");
   await expect(page.getByRole("status")).toContainText(
     "Escolha dois mapas diferentes",
   );

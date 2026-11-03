@@ -19,9 +19,13 @@ from django.urls import path
 
 from catalog.views import map_catalog
 from mapper.views import index
+from mapper.boards import boards, board_detail, board_access
 
 urlpatterns = [
     path('', index, name='mapper'),
     path('api/catalog/maps/', map_catalog, name='map-catalog'),
+    path('api/boards/', boards, name='board-list'),
+    path('api/boards/<uuid:board_id>/', board_detail, name='board-detail'),
+    path('api/boards/<uuid:board_id>/access/', board_access, name='board-access'),
     path('admin/', admin.site.urls),
 ]

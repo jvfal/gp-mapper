@@ -1,0 +1,14 @@
+{
+  "language": "Idioma",
+  "actions": {
+    "cancel": "Cancelar",
+    "retry": "Reintentar",
+    "closeNotice": "Cerrar aviso",
+    "add": "Añadir",
+    "locate": "Localizar"
+  },
+  "time": {
+    "hours": "Horas",
+    "minutes": "Minutos"
+  }
+}

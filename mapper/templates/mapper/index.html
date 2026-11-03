@@ -1,17 +1,17 @@
 {% load static %}
 <!doctype html>
-<html lang="pt-BR">
+<html lang="{{ mapper_language }}">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#141719">
-    <meta name="description" content="Planeje suas rotas pelas Avalon Roads com um mapa interativo.">
-    <title>Avalon Roads · Mapper</title>
+    <meta name="description" content="{{ mapper_page.description }}">
+    <title>{{ mapper_page.title }}</title>
     <link rel="stylesheet" href="{% static 'mapper/mapper.css' %}">
     <script type="module" src="{% static 'mapper/mapper.js' %}"></script>
   </head>
   <body>
-    <div id="mapper-root" data-catalog-url="{% url 'map-catalog' %}"></div>
-    <noscript>Ative o JavaScript para usar o mapper interativo.</noscript>
+    <div id="mapper-root" data-catalog-url="{% url 'map-catalog' %}" data-csrf-token="{{ csrf_token }}"></div>
+    <noscript>{{ mapper_page.noScript }}</noscript>
   </body>
 </html>

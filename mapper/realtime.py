@@ -1,0 +1,144 @@
+"""Atomic operation batches: unrelated edits merge, deletes beat stale moves."""
+from copy import deepcopy
+from importlib import import_module
+from types import SimpleNamespace
+from uuid import UUID
+
+from django.conf import settings
+from django.contrib.auth import get_user
+from django.db import transaction
+
+from .boards import number, state, summary, validate_state
+from .broadcast import publish_board
+from .models import Board, BoardConnection, BoardMutation, BoardNode
+from .permissions import permissions
+
+
+class AccessDenied(Exception):
+    pass
+
+
+def session_user(session_key):
+    # Reload the session on every sync/write, including logout or expiry elsewhere.
+    store = import_module(settings.SESSION_ENGINE).SessionStore(session_key=session_key)
+    user = get_user(SimpleNamespace(session=store))
+    if not user.is_authenticated or not user.is_active:
+        raise AccessDenied('authentication_required')
+    return user
+
+
+def locked_board(board_id, user):
+    try:
+        board = Board.objects.select_for_update().get(pk=board_id)
+    except Board.DoesNotExist:
+        raise AccessDenied('permission_denied')
+    if not permissions(board, user)['canView']:
+        raise AccessDenied('permission_denied')
+    return board
+
+
+def snapshot(board, user):
+    return {**summary(board, user), 'state': state(board)}
+
+
+def read_board(board_id, session_key):
+    with transaction.atomic():
+        user = session_user(session_key)
+        return snapshot(locked_board(board_id, user), user)
+
+
+def apply_operations(current, operations):
+    if not isinstance(operations, list) or not 1 <= len(operations) <= 256:
+        raise ValueError('invalid_operations')
+    nodes = {node['id']: deepcopy(node) for node in current['nodes']}
+    edges = {edge['id']: deepcopy(edge) for edge in current['edges']}
+    for operation in operations:
+        if not isinstance(operation, dict):
+            raise ValueError('invalid_operations')
+        kind = operation.get('type')
+        if kind in ('node.add', 'node.move', 'node.remove'):
+            map_id = operation.get('mapId')
+            if type(map_id) is not int or not 0 < map_id <= 2_147_483_647:
+                raise ValueError('invalid_operations')
+            node_id = f'map-{map_id}'
+            if kind == 'node.remove':
+                nodes.pop(node_id, None)
+                edges = {key: edge for key, edge in edges.items() if node_id not in (edge['source'], edge['target'])}
+                continue
+            position = operation.get('position')
+            if not isinstance(position, dict):
+                raise ValueError('invalid_operations')
+            position = {'x': number(position.get('x')), 'y': number(position.get('y'))}
+            if kind == 'node.add' and node_id not in nodes:
+                nodes[node_id] = {'id': node_id, 'mapId': map_id, 'position': position}
+            elif kind == 'node.move' and node_id in nodes:
+                nodes[node_id]['position'] = position
+        elif kind in ('edge.add', 'edge.update', 'edge.remove'):
+            edge = operation.get('edge')
+            edge_id = operation.get('id') if kind == 'edge.remove' else edge.get('id') if isinstance(edge, dict) else None
+            if not isinstance(edge_id, str) or not 1 <= len(edge_id) <= 100:
+                raise ValueError('invalid_operations')
+            if kind == 'edge.remove':
+                edges.pop(edge_id, None)
+                continue
+            source, target = edge.get('source'), edge.get('target')
+            if not isinstance(source, str) or not isinstance(target, str):
+                raise ValueError('invalid_operations')
+            if source not in nodes or target not in nodes:
+                continue  # A concurrent node deletion wins over an old edge edit.
+            if kind == 'edge.add' and edge_id in edges or kind == 'edge.update' and edge_id not in edges:
+                continue
+            if any(other['id'] != edge_id and {source, target} == {other['source'], other['target']} for other in edges.values()):
+                continue
+            edges[edge_id] = deepcopy(edge)
+        else:
+            raise ValueError('invalid_operations')
+    return {**current, 'nodes': list(nodes.values()), 'edges': list(edges.values())}
+
+
+def save_delta(board, before, validated):
+    nodes, edges, _ = validated
+    old_nodes = {node['mapId']: (node['position']['x'], node['position']['y']) for node in before['nodes']}
+    new_nodes = {map_id: (x, y) for map_id, x, y in nodes}
+    old_edges = {edge['id']: (edge['source'], edge['target'], edge['sourceHandle'], edge['targetHandle'], edge['expiresAt']) for edge in before['edges']}
+    new_edges = {key: (f'map-{source}', f'map-{target}', sh, th, round(expiry.timestamp() * 1000))
+                 for key, source, target, sh, th, expiry in edges}
+    if old_nodes == new_nodes and old_edges == new_edges:
+        return False
+    changed_edges = {key for key in old_edges.keys() | new_edges.keys() if old_edges.get(key) != new_edges.get(key)}
+    board.connections.filter(client_id__in=changed_edges).delete()
+    board.nodes.filter(road_map_id__in=old_nodes.keys() - new_nodes.keys()).delete()
+    BoardNode.objects.bulk_create([
+        BoardNode(board=board, road_map_id=key, x=xy[0], y=xy[1])
+        for key, xy in new_nodes.items() if old_nodes.get(key) != xy
+    ], update_conflicts=True, update_fields=['x', 'y'], unique_fields=['board', 'road_map'])
+    if changed_edges:
+        by_map = {node.road_map_id: node for node in board.nodes.all()}
+        BoardConnection.objects.bulk_create([
+            BoardConnection(board=board, client_id=key, source=by_map[source], target=by_map[target],
+                            source_handle=sh, target_handle=th, expires_at=expiry)
+            for key, source, target, sh, th, expiry in edges if key in changed_edges
+        ])
+    board.revision += 1
+    board.save(update_fields=['revision', 'updated_at'])
+    return True
+
+
+def mutate_board(board_id, session_key, mutation_id, operations):
+    try:
+        mutation_id = UUID(str(mutation_id))
+    except (ValueError, TypeError, AttributeError):
+        raise ValueError('invalid_mutation_id')
+    with transaction.atomic():
+        user = session_user(session_key)
+        board = locked_board(board_id, user)
+        if not permissions(board, user)['canEdit']:
+            raise AccessDenied('permission_denied')
+        if not BoardMutation.objects.filter(board=board, mutation_id=mutation_id).exists():
+            current = state(board)
+            candidate = apply_operations(current, operations)
+            changed = save_delta(board, current, validate_state(candidate))
+            BoardMutation.objects.create(board=board, mutation_id=mutation_id)
+            if changed:
+                publish_board(board.pk)
+        return snapshot(board, user)

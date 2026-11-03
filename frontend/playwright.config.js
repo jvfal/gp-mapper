@@ -9,6 +9,7 @@ export default defineConfig({
     baseURL: process.env.MAPPER_URL || "http://127.0.0.1:8000",
     ...devices["Desktop Chrome"],
     channel: process.env.PLAYWRIGHT_CHANNEL || "msedge",
+    locale: "pt-BR",
     viewport: { width: 1440, height: 1000 },
     trace: "retain-on-failure",
   },

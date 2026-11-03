@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createContext, memo, useContext } from "react";
 import {
   BaseEdge,
@@ -7,16 +8,16 @@ import {
   getBezierPath,
 } from "@xyflow/react";
 import { Icon } from "./icons";
-import { remainingTime } from "./graph";
-
+import { featureRows, HANDLE_SIZE, remainingTime } from "./graph";
 export const CatalogContext = createContext(new Map());
 export const EdgeContext = createContext({
   now: Date.now(),
   editEdge: () => {},
+  canEdit: false,
 });
-
 export function FeatureChip({ feature }) {
-  const description = `${feature.count} × ${feature.label} · ${feature.size_label}`;
+  const { t } = useTranslation("mapper");
+  const description = `${feature.count} × ${t(`features.types.${feature.type}`, { defaultValue: feature.type })} · ${t(`features.sizes.${feature.size}`)}`;
   return (
     <span
       className={`feature-chip feature-${feature.size}`}
@@ -33,84 +34,110 @@ export function FeatureChip({ feature }) {
       <strong>{feature.count}</strong>
       {feature.size === "large" && (
         <span className="feature-size" aria-hidden="true">
-          G
+          {t("features.largeBadge")}
         </span>
       )}
     </span>
   );
 }
-
 export const MapNode = memo(function MapNode({ data, selected }) {
+  const { t } = useTranslation("mapper");
   const catalog = useContext(CatalogContext);
   const map = catalog.get(data.mapId);
   if (!map) return null;
-  const extras = [...map.chests, ...map.dungeons];
+  const rows = featureRows([...map.resources, ...map.chests, ...map.dungeons]);
   return (
-    <article className={`road-card ${selected ? "is-selected" : ""}`}>
+    <article
+      className={`road-card ${selected ? "is-selected" : ""}`}
+      style={{
+        "--handle-size": `${HANDLE_SIZE}px`,
+      }}
+    >
       <Handle
         type="source"
         position={Position.Top}
         id="top"
-        aria-label={`Conectar ao topo de ${map.name}`}
+        aria-label={t("handles.top", {
+          name: map.name,
+        })}
       />
       <div className="road-card-heading">
         <span className={`tier-badge t${map.tier}`}>T{map.tier}</span>
         <h3>{map.name}</h3>
       </div>
       <div className="road-card-features">
-        {map.resources.length > 0 && (
-          <div className="feature-group" aria-label="Recursos">
-            {map.resources.map((feature) => (
-              <FeatureChip
-                key={`${feature.type}-${feature.size}`}
-                feature={feature}
-              />
-            ))}
-          </div>
-        )}
-        {extras.length > 0 && (
+        {rows.map((row, index) => (
           <div
-            className="feature-group feature-extras"
-            aria-label="Baús e dungeons"
+            className="feature-row"
+            key={index}
+            style={{
+              gridTemplateColumns: `repeat(${row.length}, minmax(0, 42px))`,
+            }}
           >
-            {extras.map((feature) => (
+            {row.map((feature) => (
               <FeatureChip
                 key={`${feature.type}-${feature.size}`}
                 feature={feature}
               />
             ))}
           </div>
-        )}
-        {!map.resources.length && !extras.length && (
-          <span className="muted">Sem recursos catalogados</span>
-        )}
+        ))}
+        {!rows.length && <span className="muted">{t("features.empty")}</span>}
       </div>
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom"
-        aria-label={`Conectar à base de ${map.name}`}
+        aria-label={t("handles.bottom", {
+          name: map.name,
+        })}
       />
       <Handle
         type="source"
         position={Position.Left}
         id="left"
-        aria-label={`Conectar à esquerda de ${map.name}`}
+        aria-label={t("handles.left", {
+          name: map.name,
+        })}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        aria-label={`Conectar à direita de ${map.name}`}
+        aria-label={t("handles.right", {
+          name: map.name,
+        })}
       />
     </article>
   );
 });
-
 export function TimedEdge(props) {
-  const { now, editEdge } = useContext(EdgeContext);
-  const [path, x, y] = getBezierPath(props);
+  const { t } = useTranslation("mapper");
+  const { now, editEdge, canEdit } = useContext(EdgeContext);
+  // React Flow anchors edges to the outside of the enlarged hit area. Draw
+  // from its center so lines meet the visible points and exported cards.
+  const half = HANDLE_SIZE / 2;
+  const offsets = {
+    top: [0, half],
+    bottom: [0, -half],
+    left: [half, 0],
+    right: [-half, 0],
+  };
+  const source = offsets[props.sourcePosition] || [0, 0];
+  const target = offsets[props.targetPosition] || [0, 0];
+  const [path, x, y] = getBezierPath({
+    ...props,
+    sourceX: props.sourceX + source[0],
+    sourceY: props.sourceY + source[1],
+    targetX: props.targetX + target[0],
+    targetY: props.targetY + target[1],
+  });
   const expired = props.data.expiresAt <= now;
+  const time = remainingTime(
+    props.data.expiresAt,
+    now,
+    t("connection.expired"),
+  );
   return (
     <>
       <BaseEdge
@@ -130,11 +157,17 @@ export function TimedEdge(props) {
           style={{
             transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
           }}
-          onClick={() => editEdge(props.id)}
-          aria-label={`Editar conexão: ${remainingTime(props.data.expiresAt, now)}`}
+          onClick={() => canEdit && editEdge(props.id)}
+          aria-disabled={!canEdit}
+          aria-label={t(
+            canEdit ? "connection.editTime" : "sharing.connectionTime",
+            {
+              time: time,
+            },
+          )}
         >
           <Icon name="clock" size={12} />
-          {remainingTime(props.data.expiresAt, now)}
+          {time}
         </button>
       </EdgeLabelRenderer>
     </>

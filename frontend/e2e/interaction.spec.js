@@ -1,19 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { createConnection } from "./helpers";
 
 test("drag handles to connect maps and drag a card to save its position", async ({
   page,
 }) => {
   await page.goto("/");
-  for (const [label, name] of [
-    ["De", "Cases-Ugumlos"],
-    ["Para", "Casitos-Alieam"],
-  ]) {
-    await page.getByRole("combobox", { name: label, exact: true }).fill(name);
-    await page.getByRole("option", { name: new RegExp(name) }).click();
-  }
-  await page
-    .getByRole("button", { name: "Criar conexão", exact: true })
-    .click();
+  await createConnection(page);
   await expect(page.locator(".edge-time")).toHaveCount(1);
   await page.locator(".edge-time").click();
   await page.getByRole("button", { name: "Remover seleção" }).click();

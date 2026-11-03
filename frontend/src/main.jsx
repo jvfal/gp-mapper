@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, {
   useCallback,
   useEffect,
@@ -14,7 +15,6 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
-  ReactFlowProvider,
   useEdgesState,
   useNodesInitialized,
   useNodesState,
@@ -23,14 +23,19 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles.css";
+import { BoardAccessPanel } from "./BoardAccessPanel";
+import { BoardLibrary, BoardName } from "./BoardLibrary";
+import { useBoardRealtime } from "./useBoardRealtime";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Icon } from "./icons";
 import { MapSelect } from "./MapSelect";
-import { ConnectionDialog } from "./ConnectionDialog";
+import { SHOW_CONNECTION_FORM } from "./config";
+import { captureMap } from "./captureMap";
+import { ConnectionCard } from "./ConnectionCard";
 import { useMapFullscreen } from "./useMapFullscreen";
 import { CatalogContext, EdgeContext, MapNode, TimedEdge } from "./MapElements";
 import { CatalogDrawer, MapInspector } from "./MapDrawer";
 import {
-  STORAGE_KEY,
   connectionExists,
   makeNode,
   nodeId,
@@ -38,12 +43,21 @@ import {
   restoreBoard,
   serializeBoard,
 } from "./graph";
-
-const nodeTypes = { roadMap: MapNode };
-const edgeTypes = { timed: TimedEdge };
-const initialViewport = { x: 0, y: 0, zoom: 1 };
-
-function App() {
+const nodeTypes = {
+  roadMap: MapNode,
+};
+const edgeTypes = {
+  timed: TimedEdge,
+};
+const initialViewport = {
+  x: 0,
+  y: 0,
+  zoom: 1,
+};
+function App({ board, onBack, onReload }) {
+  const { t } = useTranslation("mapper");
+  const [boardMetadata, setBoardMetadata] = useState(board);
+  const [showAccess, setShowAccess] = useState(false);
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -61,15 +75,14 @@ function App() {
   const [inspectedId, setInspectedId] = useState(null);
   const [viewport, setViewport] = useState(initialViewport);
   const [hydrated, setHydrated] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [storageError, setStorageError] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [isCapturing, setIsCapturing] = useState(false);
+  const captureBusy = useRef(false);
   const flow = useReactFlow();
   const zoom = useStore((state) => state.transform[2]);
   const canvasRef = useRef(null);
   const canvasShellRef = useRef(null);
   const { isFullscreen, toggleFullscreen } = useMapFullscreen(canvasShellRef);
-  const lastSaved = useRef("");
   const fitOnRestore = useRef(false);
   const nodesInitialized = useNodesInitialized();
   const mapById = useMemo(
@@ -83,14 +96,88 @@ function App() {
   const selectedCount =
     nodes.filter((node) => node.selected).length +
     edges.filter((edge) => edge.selected).length;
+  const snapshot = useMemo(
+    () =>
+      hydrated
+        ? serializeBoard(nodes, edges, viewport, canvasRef.current?.clientWidth)
+        : null,
+    [nodes, edges, viewport, hydrated],
+  );
+  const {
+    status: saveStatus,
+    connection,
+    flush,
+  } = useBoardRealtime(board, snapshot, {
+    onMetadata: setBoardMetadata,
+    onRemote: (graph) => {
+        setNow(Date.now());
+      const restored = restoreBoard(
+        { ...graph, version: 1, viewport },
+        catalog,
+      );
+      setNodes((current) => {
+        const previous = new Map(current.map((node) => [node.id, node]));
+        return restored.nodes.map((node) => {
+          const old = previous.get(node.id);
+          if (
+            old &&
+            old.position.x === node.position.x &&
+            old.position.y === node.position.y
+          )
+            return old;
+          return { ...old, ...node };
+        });
+      });
+      setEdges((current) => {
+        const previous = new Map(current.map((edge) => [edge.id, edge]));
+        return restored.edges.map((edge) => ({
+          ...previous.get(edge.id),
+          ...edge,
+        }));
+      });
+      const ids = new Set(restored.nodes.map((node) => node.id));
+      setPendingConnection((current) =>
+        current &&
+        ids.has(current.source) &&
+        ids.has(current.target) &&
+        (!current.edgeId ||
+          restored.edges.some((edge) => edge.id === current.edgeId))
+          ? current
+          : null,
+      );
+      setEditingId((current) =>
+        restored.edges.some((edge) => edge.id === current) ? current : null,
+      );
+    },
+  });
+  const canEdit = boardMetadata.permissions.canEdit && saveStatus !== "denied";
+  const canManage =
+    boardMetadata.permissions.canManage && saveStatus !== "denied";
+  const saved = saveStatus === "saved";
+  const storageError = ["failed", "session", "conflict", "denied"].includes(
+    saveStatus,
+  );
   const saveLabel = !hydrated
-    ? "Aguardando catálogo"
-    : storageError
-      ? "Não foi possível salvar · Exporte o quadro"
-      : saved
-        ? "Salvo neste navegador"
-        : "Salvando...";
-
+    ? t("save.waiting")
+    : saveStatus === "denied"
+      ? t("save.denied")
+      : ["connecting", "reconnecting"].includes(saveStatus)
+        ? t("live." + saveStatus)
+        : !canEdit
+          ? t("sharing.readOnly")
+          : t("save." + saveStatus);
+  async function leaveBoard() {
+    if (saveStatus === "denied") {
+      if (window.confirm(t("sharing.discardChanges"))) onBack();
+      return;
+    }
+    try {
+      await flush();
+      onBack();
+    } catch {
+      setNotice({ key: "library.leaveError", kind: "error" });
+    }
+  }
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -105,44 +192,51 @@ function App() {
       .then((data) => {
         if (!Array.isArray(data.maps)) throw new Error("catalog");
         setCatalog(data.maps);
+        const restored = restoreBoard(board.state, data.maps);
+        fitOnRestore.current =
+          !Number.isFinite(board.state.canvasWidth) ||
+          Math.abs(board.state.canvasWidth - canvasRef.current.clientWidth) >
+            30;
+        setNodes(restored.nodes);
+        setEdges(restored.edges);
+        let camera = restored.viewport;
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const board = JSON.parse(raw);
-            const restored = restoreBoard(board, data.maps);
-            fitOnRestore.current =
-              !Number.isFinite(board.canvasWidth) ||
-              Math.abs(board.canvasWidth - canvasRef.current.clientWidth) > 30;
-            setNodes(restored.nodes);
-            setEdges(restored.edges);
-            setViewport(restored.viewport);
-            flow.setViewport(restored.viewport);
-          }
+          const stored = JSON.parse(
+            localStorage.getItem(`avalon-roads:camera:${board.id}`),
+          );
+          if (
+            Number.isFinite(stored?.x) &&
+            Number.isFinite(stored?.y) &&
+            Number.isFinite(stored?.zoom) &&
+            stored.zoom >= 0.25 &&
+            stored.zoom <= 1.8
+          )
+            camera = stored;
         } catch {
-          setNotice({
-            text: "Não foi possível recuperar o rascunho deste navegador.",
-            kind: "error",
-          });
+          /* The initial saved viewport remains usable. */
         }
+        setViewport(camera);
+        flow.setViewport(camera);
         setHydrated(true);
         setLoading(false);
       })
       .catch((error) => {
         if (error.name !== "AbortError") {
-          setLoadError("Não foi possível carregar os mapas.");
+          setLoadError("errors.catalog");
           setLoading(false);
         }
       });
     return () => controller.abort();
-  }, [attempt, setNodes, setEdges, flow.setViewport]);
-
+  }, [attempt, board, setNodes, setEdges, flow.setViewport]);
   useEffect(() => {
     if (hydrated && nodesInitialized && fitOnRestore.current) {
       fitOnRestore.current = false;
-      flow.fitView({ padding: 0.2, maxZoom: 1 });
+      flow.fitView({
+        padding: 0.2,
+        maxZoom: 1,
+      });
     }
   }, [hydrated, nodesInitialized, flow.fitView]);
-
   useEffect(() => {
     const element = canvasRef.current;
     let width = element.clientWidth;
@@ -153,7 +247,11 @@ function App() {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         if (flow.getNodes().length)
-          flow.fitView({ padding: 0.2, maxZoom: 1, duration: 250 });
+          flow.fitView({
+            padding: 0.2,
+            maxZoom: 1,
+            duration: 250,
+          });
       }, 150);
     });
     observer.observe(element);
@@ -162,45 +260,27 @@ function App() {
       clearTimeout(timeout);
     };
   }, [flow.fitView, flow.getNodes]);
-
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    const serialized = JSON.stringify(
-      serializeBoard(nodes, edges, viewport, canvasRef.current?.clientWidth),
-    );
-    if (serialized === lastSaved.current) return;
-    setSaved(false);
-    const timeout = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, serialized);
-        lastSaved.current = serialized;
-        setSaved(true);
-        setStorageError(false);
-      } catch {
-        setStorageError(true);
-      }
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [nodes, edges, viewport, hydrated]);
-
   useEffect(() => {
     if (!notice) return;
     const timeout = setTimeout(() => setNotice(null), 5500);
     return () => clearTimeout(timeout);
   }, [notice]);
-
-  const showNotice = (text, kind = "success") => setNotice({ text, kind });
+  const showNotice = (key, kind = "success", values = {}) =>
+    setNotice({ key, kind, values });
   const fit = () =>
     setTimeout(
-      () => flow.fitView({ padding: 0.35, duration: 350, maxZoom: 1 }),
+      () =>
+        flow.fitView({
+          padding: 0.35,
+          duration: 350,
+          maxZoom: 1,
+        }),
       80,
     );
-
   function centerPosition() {
     const bounds = canvasRef.current?.getBoundingClientRect();
     return bounds
@@ -208,28 +288,37 @@ function App() {
           x: bounds.left + bounds.width / 2 - 126,
           y: bounds.top + bounds.height / 2 - 65,
         })
-      : { x: 0, y: 0 };
+      : {
+          x: 0,
+          y: 0,
+        };
   }
-
   function addMap(map) {
+    if (!canEdit) return;
     const existing = nodes.find((node) => node.data.mapId === map.id);
     if (existing) {
       flow.setCenter(existing.position.x + 126, existing.position.y + 60, {
         zoom: 1,
         duration: 350,
       });
-      showNotice(`${map.name} já está no quadro.`);
+      showNotice("notices.mapExists", "success", {
+        name: map.name,
+      });
       return;
     }
     const position = centerPosition();
     const offset = (nodes.length % 4) * 35;
     setNodes((current) => [
       ...current,
-      makeNode(map, { x: position.x + offset, y: position.y + offset }),
+      makeNode(map, {
+        x: position.x + offset,
+        y: position.y + offset,
+      }),
     ]);
-    showNotice(`${map.name} adicionado.`);
+    showNotice("notices.mapAdded", "success", {
+      name: map.name,
+    });
   }
-
   function upsertConnection(
     sourceMapId,
     targetMapId,
@@ -238,27 +327,24 @@ function App() {
     const sourceMap = mapById.get(sourceMapId);
     const targetMap = mapById.get(targetMapId);
     if (!sourceMap || !targetMap) {
-      showNotice("Escolha os mapas de origem e destino.", "error");
+      showNotice("errors.chooseMaps", "error");
       return false;
     }
     if (sourceMapId === targetMapId) {
-      showNotice("Escolha dois mapas diferentes.", "error");
+      showNotice("errors.sameMap", "error");
       return false;
     }
     const duration =
       (durationMinutes ?? Number(hours) * 60 + Number(minutes)) * 60_000;
     if (!Number.isFinite(duration) || duration <= 0) {
-      showNotice("O tempo restante precisa ser maior que zero.", "error");
+      showNotice("errors.duration", "error");
       return false;
     }
     const source = nodeId(sourceMapId),
       target = nodeId(targetMapId);
     const updatedEdgeId = edgeId ?? (!connection ? editingId : null);
     if (connectionExists(edges, source, target, updatedEdgeId)) {
-      showNotice(
-        "Essa conexão já existe. Clique no tempo dela para editar.",
-        "error",
-      );
+      showNotice("errors.duplicate", "error");
       return false;
     }
     const existingSource = nodes.find((node) => node.id === source);
@@ -266,12 +352,20 @@ function App() {
     const origin =
       existingSource?.position ||
       (existingTarget
-        ? { x: existingTarget.position.x, y: existingTarget.position.y - 225 }
+        ? {
+            x: existingTarget.position.x,
+            y: existingTarget.position.y - 225,
+          }
         : centerPosition());
     const additions = [];
     if (!existingSource) additions.push(makeNode(sourceMap, origin));
     if (!existingTarget)
-      additions.push(makeNode(targetMap, { x: origin.x, y: origin.y + 225 }));
+      additions.push(
+        makeNode(targetMap, {
+          x: origin.x,
+          y: origin.y + 225,
+        }),
+      );
     if (additions.length) setNodes((current) => [...current, ...additions]);
     const timestamp = Date.now();
     setNow(timestamp);
@@ -292,32 +386,42 @@ function App() {
       sourceHandle: connection?.sourceHandle || handleFor(source, "bottom"),
       targetHandle: connection?.targetHandle || handleFor(target, "top"),
       type: "timed",
-      data: { expiresAt: timestamp + duration },
+      data: {
+        expiresAt: timestamp + duration,
+      },
     };
     setEdges((current) => [
       ...current.filter((item) => item.id !== edge.id),
       edge,
     ]);
-    showNotice(updatedEdgeId ? "Conexão atualizada." : "Conexão adicionada.");
+    showNotice(updatedEdgeId ? "notices.updated" : "notices.connected");
     if (!connection) setEditingId(null);
     if (additions.length) fit();
     return true;
   }
-
   const editEdge = useCallback(
     (id) => {
       const edge = edges.find((item) => item.id === id);
       if (!edge) return;
-      if (isFullscreen) {
-        setPendingConnection({ ...edge, edgeId: id });
+      if (isFullscreen || !SHOW_CONNECTION_FORM) {
+        setPendingConnection({
+          ...edge,
+          edgeId: id,
+        });
         setEdges((current) =>
-          current.map((item) => ({ ...item, selected: item.id === id })),
+          current.map((item) => ({
+            ...item,
+            selected: item.id === id,
+          })),
         );
         return;
       }
       setEditingId(id);
       setEdges((current) =>
-        current.map((item) => ({ ...item, selected: item.id === id })),
+        current.map((item) => ({
+          ...item,
+          selected: item.id === id,
+        })),
       );
       setFrom(
         nodes.find((node) => node.id === edge.source)?.data.mapId ?? null,
@@ -332,7 +436,6 @@ function App() {
     },
     [edges, nodes, setEdges, isFullscreen],
   );
-
   function removeSelected() {
     const removedIds = new Set(
       nodes.filter((node) => node.selected).map((node) => node.id),
@@ -351,43 +454,72 @@ function App() {
       setDrawer(null);
       setInspectedId(null);
     }
-    showNotice("Seleção removida.");
+    showNotice("notices.removed");
   }
-
-  function exportBoard() {
-    const blob = new Blob(
-      [JSON.stringify(serializeBoard(nodes, edges, viewport), null, 2)],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "avalon-roads.json";
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showNotice("Quadro exportado.");
+  function startCapture() {
+    if (captureBusy.current || !nodes.length) return false;
+    captureBusy.current = true;
+    setIsCapturing(true);
+    return true;
   }
-
-  async function copyBoard() {
+  function finishCapture() {
+    captureBusy.current = false;
+    setIsCapturing(false);
+  }
+  async function exportBoard() {
+    if (!startCapture()) return;
     try {
-      await navigator.clipboard.writeText(
-        JSON.stringify(serializeBoard(nodes, edges, viewport), null, 2),
-      );
-      showNotice("Quadro copiado.");
+      const blob = await captureMap(canvasShellRef.current, flow);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "avalon-roads.png";
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showNotice("notices.downloaded");
     } catch {
-      showNotice("Não foi possível copiar. Use o botão Exportar.", "error");
+      showNotice("errors.capture", "error");
+    } finally {
+      finishCapture();
     }
   }
-
+  async function copyBoard() {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+      showNotice("errors.clipboardUnsupported", "error");
+      return;
+    }
+    if (!startCapture()) return;
+    try {
+      const image = captureMap(canvasShellRef.current, flow);
+      // Pass the promise immediately to retain the click's clipboard activation.
+      const write = navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": image,
+        }),
+      ]);
+      await Promise.all([image, write]);
+      showNotice("notices.copied");
+    } catch {
+      showNotice("errors.copy", "error");
+    } finally {
+      finishCapture();
+    }
+  }
   const inspected = mapById.get(inspectedId);
-  const edgeContext = useMemo(() => ({ now, editEdge }), [now, editEdge]);
-
+  const edgeContext = useMemo(
+    () => ({
+      now,
+      editEdge,
+      canEdit,
+    }),
+    [now, editEdge, canEdit],
+  );
   return (
     <CatalogContext.Provider value={mapById}>
       <EdgeContext.Provider value={edgeContext}>
         <div className="app-shell">
           <header className="app-header">
-            <a href="/" className="brand" aria-label="Avalon Roads, início">
+            <a href="/" className="brand" aria-label={t("page.home")}>
               <span className="brand-mark">
                 <Icon name="compass" size={25} />
               </span>
@@ -398,165 +530,185 @@ function App() {
               <span className="brand-product">Mapper</span>
             </a>
             <div className="header-right">
+              <LanguageSwitcher />
+              <button className="text-button" onClick={leaveBoard}>
+                {t("library.back")}
+              </button>
               <span className="draft-badge">
                 <span />
-                Rascunho local
+                {t(
+                  boardMetadata.scope === "guild"
+                    ? "sharing.guild"
+                    : "sharing.private",
+                )}
               </span>
-              <a
-                className="admin-link"
-                href="/admin/"
-                title="Abrir administração"
-              >
+              <a className="admin-link" href="/admin/" title={t("page.admin")}>
                 Admin
                 <Icon name="arrow" size={15} />
               </a>
             </div>
           </header>
 
-          <main>
+          <main className={SHOW_CONNECTION_FORM ? "" : "map-only"}>
             <div className="page-heading">
               <div>
-                <span className="eyebrow">SEU CAMINHO PELAS ROADS</span>
+                <span className="eyebrow">{t("page.eyebrow")}</span>
                 <h1>
-                  Mapa de conexões<span>.</span>
+                  <BoardName board={boardMetadata} canManage={canManage} />
                 </h1>
-                <p>
-                  Conecte mapas, acompanhe os portais e planeje sua próxima
-                  rota.
-                </p>
+                <p>{t("page.intro")}</p>
               </div>
-              <button
-                className="button secondary catalog-open"
-                onClick={() => {
-                  setDrawer("catalog");
-                  setInspectedId(null);
-                }}
-                disabled={loading || !!loadError}
-              >
-                <Icon name="plus" size={17} />
-                Adicionar mapa
-                <span className="shortcut-count">{catalog.length}</span>
-              </button>
             </div>
 
-            <section
-              className={`connection-panel ${editingId ? "editing" : ""}`}
-              aria-labelledby="connection-title"
-            >
-              <div className="panel-title">
-                <span className="panel-title-icon">
-                  <Icon name="link" size={17} />
-                </span>
-                <h2 id="connection-title">
-                  {editingId ? "Editar conexão" : "Adicionar conexão"}
-                </h2>
-                <span className="panel-hint">
-                  {editingId
-                    ? "Ajuste os mapas ou renove o tempo restante."
-                    : "Selecione dois mapas para abrir um novo caminho."}
-                </span>
-                {editingId && (
-                  <button
-                    className="text-button"
-                    onClick={() => setEditingId(null)}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-              <form
-                className="connection-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  upsertConnection(from, to);
-                }}
-              >
-                <MapSelect
-                  label="De"
-                  value={from}
-                  onChange={setFrom}
-                  catalog={catalog}
-                  boardIds={boardIds}
-                />
+            {canManage && (
+              <div className="board-sharing-actions">
                 <button
-                  className="swap-button icon-button"
-                  type="button"
-                  aria-label="Inverter origem e destino"
-                  onClick={() => {
-                    setFrom(to);
-                    setTo(from);
+                  className="button secondary"
+                  onClick={() => setShowAccess(true)}
+                >
+                  <Icon name="link" size={16} />
+                  {t("sharing.title")}
+                </button>
+              </div>
+            )}
+            {/* Preserved for optional reactivation in config.js. */}
+            {SHOW_CONNECTION_FORM && canEdit && (
+              <section
+                className={`connection-panel ${editingId ? "editing" : ""}`}
+                aria-labelledby="connection-title"
+              >
+                <div className="panel-title">
+                  <span className="panel-title-icon">
+                    <Icon name="link" size={17} />
+                  </span>
+                  <h2 id="connection-title">
+                    {editingId ? t("connection.edit") : t("connection.add")}
+                  </h2>
+                  <span className="panel-hint">
+                    {editingId ? t("legacy.editHint") : t("legacy.addHint")}
+                  </span>
+                  {editingId && (
+                    <button
+                      className="text-button"
+                      onClick={() => setEditingId(null)}
+                    >
+                      {t("legacy.cancelEdit")}
+                    </button>
+                  )}
+                </div>
+                <form
+                  className="connection-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    upsertConnection(from, to);
                   }}
                 >
-                  <Icon name="swap" size={19} />
-                </button>
-                <MapSelect
-                  label="Para"
-                  value={to}
-                  onChange={setTo}
-                  catalog={catalog}
-                  boardIds={boardIds}
-                />
-                <div className="duration-field">
-                  <label>Tempo restante</label>
-                  <div className="duration-input">
-                    <Icon name="clock" size={16} />
-                    <select
-                      aria-label="Horas restantes"
-                      value={hours}
-                      onChange={(event) => setHours(event.target.value)}
-                    >
-                      {Array.from({ length: 24 }, (_, index) => (
-                        <option key={index} value={index}>
-                          {String(index).padStart(2, "0")} h
-                        </option>
-                      ))}
-                    </select>
-                    <span>:</span>
-                    <select
-                      aria-label="Minutos restantes"
-                      value={minutes}
-                      onChange={(event) => setMinutes(event.target.value)}
-                    >
-                      {Array.from({ length: 60 }, (_, index) => (
-                        <option key={index} value={index}>
-                          {String(index).padStart(2, "0")} min
-                        </option>
-                      ))}
-                    </select>
+                  <MapSelect
+                    label={t("legacy.from")}
+                    value={from}
+                    onChange={setFrom}
+                    catalog={catalog}
+                    boardIds={boardIds}
+                  />
+                  <button
+                    className="swap-button icon-button"
+                    type="button"
+                    aria-label={t("legacy.swap")}
+                    onClick={() => {
+                      setFrom(to);
+                      setTo(from);
+                    }}
+                  >
+                    <Icon name="swap" size={19} />
+                  </button>
+                  <MapSelect
+                    label={t("legacy.to")}
+                    value={to}
+                    onChange={setTo}
+                    catalog={catalog}
+                    boardIds={boardIds}
+                  />
+                  <div className="duration-field">
+                    <label>{t("legacy.timeLeft")}</label>
+                    <div className="duration-input">
+                      <Icon name="clock" size={16} />
+                      <select
+                        aria-label={t("legacy.hoursLeft")}
+                        value={hours}
+                        onChange={(event) => setHours(event.target.value)}
+                      >
+                        {Array.from(
+                          {
+                            length: 24,
+                          },
+                          (_, index) => (
+                            <option key={index} value={index}>
+                              {String(index).padStart(2, "0")} h
+                            </option>
+                          ),
+                        )}
+                      </select>
+                      <span>:</span>
+                      <select
+                        aria-label={t("legacy.minutesLeft")}
+                        value={minutes}
+                        onChange={(event) => setMinutes(event.target.value)}
+                      >
+                        {Array.from(
+                          {
+                            length: 60,
+                          },
+                          (_, index) => (
+                            <option key={index} value={index}>
+                              {String(index).padStart(2, "0")} min
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
                   </div>
-                </div>
-                <button
-                  className="button primary connect-button"
-                  type="submit"
-                  disabled={loading || !!loadError}
-                >
-                  <Icon name={editingId ? "check" : "plus"} size={18} />
-                  {editingId ? "Salvar conexão" : "Criar conexão"}
-                </button>
-              </form>
-            </section>
+                  <button
+                    className="button primary connect-button"
+                    type="submit"
+                    disabled={!canEdit || loading || !!loadError}
+                  >
+                    <Icon name={editingId ? "check" : "plus"} size={18} />
+                    {editingId ? t("connection.save") : t("connection.create")}
+                  </button>
+                </form>
+              </section>
+            )}
 
             <section
               ref={canvasShellRef}
               className={`canvas-shell ${isFullscreen ? "is-fullscreen" : ""}`}
-              aria-label="Editor de conexões"
+              aria-label={t("board.editor")}
             >
               <div className="canvas-toolbar">
                 <div className="canvas-label">
                   <span className="status-dot" />
-                  <span>Exploração</span>
+                  <span>{t("board.exploration")}</span>
+                  <span
+                    className={`live-status ${connection}`}
+                    role="status"
+                    title={t("live." + connection)}
+                  >
+                    <span />
+                    {t("live." + connection)}
+                  </span>
                   <span className="toolbar-divider" />
                   <span className="map-count">
-                    {nodes.length} mapas<span> · </span>
-                    {edges.length} conexões
+                    {t("board.maps", { count: nodes.length })}
+                    <span> · </span>
+                    {t("board.connections", { count: edges.length })}
                   </span>
                 </div>
                 <div className="canvas-actions">
                   <button
                     className="icon-button add-map-button"
-                    disabled={loading || !!loadError}
-                    aria-label="Adicionar mapa pelo catálogo"
-                    title="Adicionar mapa"
+                    disabled={!canEdit || loading || !!loadError}
+                    aria-label={t("board.addMap")}
+                    title={t("board.addMapTitle")}
                     onClick={() => {
                       setDrawer("catalog");
                       setInspectedId(null);
@@ -566,55 +718,53 @@ function App() {
                   </button>
                   <button
                     className="tool-button"
-                    disabled={!nodes.length}
+                    disabled={!canEdit || !nodes.length}
                     onClick={() => {
                       setNodes((current) => organizeNodes(current, edges));
                       fit();
                     }}
-                    title="Organizar mapas"
+                    title={t("board.organizeTitle")}
                   >
                     <Icon name="layout" size={16} />
-                    <span>Organizar</span>
+                    <span>{t("board.organize")}</span>
                   </button>
                   <span className="toolbar-divider" />
                   <button
                     className="icon-button"
-                    disabled={!selectedCount}
+                    disabled={!canEdit || !selectedCount}
                     onClick={removeSelected}
-                    aria-label="Remover seleção"
-                    title="Remover seleção"
+                    aria-label={t("board.remove")}
+                    title={t("board.remove")}
                   >
                     <Icon name="trash" size={17} />
                   </button>
                   <button
                     className="icon-button"
-                    disabled={!nodes.length}
+                    disabled={!nodes.length || isCapturing}
                     onClick={copyBoard}
-                    aria-label="Copiar quadro"
-                    title="Copiar quadro"
+                    aria-label={t("board.copy")}
+                    aria-busy={isCapturing}
+                    title={t("board.copyTitle")}
                   >
                     <Icon name="copy" size={16} />
                   </button>
                   <button
                     className="icon-button"
-                    disabled={!nodes.length}
+                    disabled={!nodes.length || isCapturing}
                     onClick={exportBoard}
-                    aria-label="Exportar quadro"
-                    title="Exportar quadro"
+                    aria-label={t("board.download")}
+                    aria-busy={isCapturing}
+                    title={t("board.downloadTitle")}
                   >
                     <Icon name="download" size={18} />
                   </button>
                   <button
                     className="icon-button danger"
-                    disabled={!nodes.length}
-                    aria-label="Limpar quadro"
-                    title="Limpar quadro"
+                    disabled={!canEdit || !nodes.length}
+                    aria-label={t("board.clear")}
+                    title={t("board.clear")}
                     onClick={() => {
-                      if (
-                        window.confirm(
-                          "Limpar todos os mapas e conexões deste rascunho?",
-                        )
-                      ) {
+                      if (window.confirm(t("board.confirmClear"))) {
                         setNodes([]);
                         setEdges([]);
                         setEditingId(null);
@@ -631,11 +781,13 @@ function App() {
                     aria-pressed={isFullscreen}
                     aria-label={
                       isFullscreen
-                        ? "Sair da tela cheia"
-                        : "Abrir mapa em tela cheia"
+                        ? t("board.exitFullscreen")
+                        : t("board.enterFullscreen")
                     }
                     title={
-                      isFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"
+                      isFullscreen
+                        ? t("board.exitFullscreenHint")
+                        : t("board.fullscreen")
                     }
                   >
                     <Icon
@@ -651,6 +803,28 @@ function App() {
                 ref={canvasRef}
               >
                 <ReactFlow
+                  ariaLabelConfig={{
+                    "node.a11yDescription.default": t("a11y.node"),
+                    "node.a11yDescription.keyboardDisabled": t("a11y.nodeMove"),
+                    "node.a11yDescription.ariaLiveMessage": ({
+                      direction,
+                      x,
+                      y,
+                    }) =>
+                      t("a11y.moved", {
+                        direction: t("a11y.directions." + direction, {
+                          defaultValue: direction,
+                        }),
+                        x,
+                        y,
+                      }),
+                    "edge.a11yDescription.default": t("a11y.edge"),
+                    "controls.ariaLabel": t("a11y.controls"),
+                    "controls.zoomIn.ariaLabel": t("a11y.zoomIn"),
+                    "controls.zoomOut.ariaLabel": t("a11y.zoomOut"),
+                    "controls.fitView.ariaLabel": t("a11y.fit"),
+                    "minimap.ariaLabel": t("a11y.minimap"),
+                  }}
                   nodes={nodes}
                   edges={edges}
                   nodeTypes={nodeTypes}
@@ -667,6 +841,7 @@ function App() {
                       setEditingId(null);
                   }}
                   onConnect={(connection) => {
+                    if (!canEdit) return;
                     setEditingId(null);
                     setPendingConnection(connection);
                   }}
@@ -676,20 +851,14 @@ function App() {
                     const source = connection.fromNode.id;
                     const target = connection.toNode?.id;
                     if (source === target) {
-                      showNotice("Escolha dois mapas diferentes.", "error");
+                      showNotice("errors.sameMap", "error");
                     } else if (
                       target &&
                       connectionExists(edges, source, target)
                     ) {
-                      showNotice(
-                        "Essa conexão já existe. Clique no tempo dela para editar.",
-                        "error",
-                      );
+                      showNotice("errors.duplicate", "error");
                     } else {
-                      showNotice(
-                        "Solte a conexão perto de um ponto de outro mapa.",
-                        "error",
-                      );
+                      showNotice("errors.drop", "error");
                     }
                   }}
                   isValidConnection={(connection) =>
@@ -704,7 +873,9 @@ function App() {
                     setInspectedId(node.data.mapId);
                     setDrawer("detail");
                   }}
-                  onEdgeClick={(_, edge) => editEdge(edge.id)}
+                  onEdgeDoubleClick={
+                    canEdit ? (_, edge) => editEdge(edge.id) : undefined
+                  }
                   onPaneClick={() => {
                     if (drawer === "detail") setDrawer(null);
                   }}
@@ -712,12 +883,25 @@ function App() {
                     if (removed.some((node) => node.data.mapId === inspectedId))
                       setDrawer(null);
                   }}
-                  onMoveEnd={(_, nextViewport) => setViewport(nextViewport)}
+                  onMoveEnd={(_, nextViewport) => {
+                    setViewport(nextViewport);
+                    try {
+                      localStorage.setItem(
+                        `avalon-roads:camera:${board.id}`,
+                        JSON.stringify(nextViewport),
+                      );
+                    } catch {
+                      /* Camera persistence is optional. */
+                    }
+                  }}
                   defaultViewport={viewport}
                   minZoom={0.25}
                   maxZoom={1.8}
                   connectionMode={ConnectionMode.Loose}
-                  deleteKeyCode={["Backspace", "Delete"]}
+                  nodesDraggable={canEdit}
+                  nodesConnectable={canEdit}
+                  edgesReconnectable={false}
+                  deleteKeyCode={canEdit ? ["Backspace", "Delete"] : null}
                   colorMode="dark"
                   snapToGrid
                   snapGrid={[15, 15]}
@@ -748,22 +932,24 @@ function App() {
                     </div>
                     <span className="eyebrow">
                       {loading
-                        ? "PREPARANDO A EXPLORAÇÃO"
+                        ? t("empty.loadingCaption")
                         : loadError
-                          ? "CATÁLOGO INDISPONÍVEL"
-                          : "UM NOVO CAMINHO"}
+                          ? t("empty.errorCaption")
+                          : t("empty.caption")}
                     </span>
                     <h2>
                       {loading
-                        ? "Carregando os mapas..."
-                        : loadError || "Toda rota começa com um mapa."}
+                        ? t("empty.loading")
+                        : loadError
+                          ? t(loadError)
+                          : t(canEdit ? "empty.title" : "sharing.emptyTitle")}
                     </h2>
                     <p>
                       {loadError
-                        ? "Verifique sua conexão e tente novamente."
-                        : "Adicione um mapa do catálogo ou crie sua primeira conexão no formulário acima."}
+                        ? t("empty.retryHint")
+                        : t(canEdit ? "empty.hint" : "sharing.emptyHint")}
                     </p>
-                    {!loading && (
+                    {!loading && (loadError || canEdit) && (
                       <button
                         className="button secondary"
                         onClick={() =>
@@ -774,8 +960,8 @@ function App() {
                       >
                         <Icon name={loadError ? "swap" : "plus"} size={17} />
                         {loadError
-                          ? "Tentar novamente"
-                          : "Escolher primeiro mapa"}
+                          ? t("common:actions.retry")
+                          : t("empty.choose")}
                       </button>
                     )}
                   </div>
@@ -797,22 +983,47 @@ function App() {
                 <span>
                   <Icon name="info" size={13} />
                   <span>
-                    Arraste os mapas para organizar
-                    <span className="desktop-tip">
+                    {t(canEdit ? "board.dragHint" : "sharing.readOnlyHint")}
+                    <span className="desktop-tip" hidden={!canEdit}>
                       {" "}
-                      · Clique nos ícones de tempo para editar conexões
+                      {t("board.editHint")}
                     </span>
                   </span>
                 </span>
                 <span className={storageError ? "storage-error" : ""}>
                   <span className={`save-dot ${saved ? "saved" : ""}`} />
                   {saveLabel}
+                  {storageError && saveStatus !== "denied" && (
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        if (saveStatus === "conflict") {
+                          if (window.confirm(t("library.reloadConfirm")))
+                            onReload();
+                        } else {
+                          flush().catch(() => {});
+                        }
+                      }}
+                    >
+                      {t(
+                        saveStatus === "conflict"
+                          ? "library.reload"
+                          : "common:actions.retry",
+                      )}
+                    </button>
+                  )}
                 </span>
               </div>
             </section>
             <footer className="page-footer">
               <span>AVALON ROADS MAPPER</span>
-              <span>Seu rascunho é salvo apenas neste navegador.</span>
+              <span>
+                {t(
+                  boardMetadata.scope === "guild"
+                    ? "sharing.guildSaved"
+                    : "page.localOnly",
+                )}
+              </span>
             </footer>
           </main>
         </div>
@@ -823,17 +1034,38 @@ function App() {
                 name={notice.kind === "error" ? "info" : "check"}
                 size={17}
               />
-              <span>{notice.text}</span>
-              <button aria-label="Fechar aviso" onClick={() => setNotice(null)}>
+              <span>{t(notice.key, notice.values)}</span>
+              <button
+                aria-label={t("common:actions.closeNotice")}
+                onClick={() => setNotice(null)}
+              >
                 <Icon name="close" size={15} />
               </button>
             </div>,
             canvasShellRef.current || document.body,
           )}
       </EdgeContext.Provider>
-      {pendingConnection &&
+      {showAccess && (
+        <BoardAccessPanel
+          boardId={board.id}
+          onClose={() => setShowAccess(false)}
+          onSaved={(metadata) => {
+            setBoardMetadata(metadata);
+            setShowAccess(false);
+          }}
+        />
+      )}
+      {canEdit &&
+        pendingConnection &&
         createPortal(
-          <ConnectionDialog
+          <ConnectionCard
+            key={`${pendingConnection.edgeId || "new"}-${pendingConnection.source}-${pendingConnection.target}-${pendingConnection.targetHandle}`}
+            anchor={{
+              nodeId: pendingConnection.target,
+              handleId: pendingConnection.targetHandle || "top",
+            }}
+            containerRef={canvasShellRef}
+            areaRef={canvasRef}
             isEditing={!!pendingConnection.edgeId}
             initialDuration={
               pendingConnection.edgeId
@@ -878,11 +1110,8 @@ function App() {
     </CatalogContext.Provider>
   );
 }
-
 createRoot(document.getElementById("mapper-root")).render(
   <React.StrictMode>
-    <ReactFlowProvider>
-      <App />
-    </ReactFlowProvider>
+    <BoardLibrary Editor={App} />
   </React.StrictMode>,
 );

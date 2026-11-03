@@ -1,8 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { matchesMapName } from "./graph";
-
 export function MapSelect({ label, value, onChange, catalog, boardIds }) {
+  const { t } = useTranslation("mapper");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -13,9 +14,9 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
   const options = catalog.filter((map) => matchesMapName(map.name, query));
   useEffect(() => {
     if (open)
-      document
-        .getElementById(`${id}-option-${active}`)
-        ?.scrollIntoView({ block: "nearest" });
+      document.getElementById(`${id}-option-${active}`)?.scrollIntoView({
+        block: "nearest",
+      });
   }, [open, active, id]);
   useEffect(() => {
     const close = (event) => {
@@ -40,7 +41,7 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
           id={id}
           role="combobox"
           autoComplete="off"
-          placeholder="Buscar mapa..."
+          placeholder={t("select.placeholder")}
           aria-expanded={open}
           aria-controls={`${id}-options`}
           aria-autocomplete="list"
@@ -87,7 +88,9 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
           <button
             type="button"
             className="input-clear"
-            aria-label={`Limpar ${label.toLowerCase()}`}
+            aria-label={t("select.clear", {
+              field: label.toLowerCase(),
+            })}
             onClick={() => {
               onChange(null);
               setQuery("");
@@ -106,7 +109,7 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
           aria-label={label}
         >
           <div className="options-caption">
-            {query ? "RESULTADOS" : "CATÁLOGO DE MAPAS"}
+            {query ? t("select.results") : t("catalog.caption")}
           </div>
           {options.map((map, index) => (
             <div
@@ -122,13 +125,11 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
             >
               <span className={`tier-dot t${map.tier}`} />
               <span>{map.name}</span>
-              {boardIds.has(map.id) && <small>No quadro</small>}
+              {boardIds.has(map.id) && <small>{t("select.onBoard")}</small>}
               <span className="option-tier">T{map.tier}</span>
             </div>
           ))}
-          {!options.length && (
-            <p className="no-results">Nenhum mapa encontrado.</p>
-          )}
+          {!options.length && <p className="no-results">{t("select.empty")}</p>}
         </div>
       )}
     </div>
