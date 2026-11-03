@@ -1,0 +1,7 @@
+Django==5.2.18
+django-environ==0.14.0
+psycopg[binary]==3.3.6
+channels==4.3.2
+channels-redis==4.3.0
+uvicorn[standard]==0.54.0
+whitenoise==6.12.0

@@ -1,0 +1,8 @@
+Source: https://github.com/AO-Noki/avalon-roads
+Revision: ddb72fc98c31f25207c4fa2de520f35d9c4eea97
+
+icons/: public/icons/ (11 PNG files)
+maps/: public/maps/ (316 PNG files)
+
+Original filenames and image bytes are preserved.
+Downloaded files are verified against the Git blob SHA-1 values at this revision.

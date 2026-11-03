@@ -1,0 +1,13 @@
+.venv/
+.tmp/
+.certs/
+.pip/
+__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+.env.*
+!.env.example
+!.env.docker.example
+staticfiles/
+node_modules/

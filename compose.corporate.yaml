@@ -1,0 +1,14 @@
+# Optional build configuration for Windows hosts behind HTTPS inspection.
+services:
+  web:
+    build:
+      context: .
+      secrets:
+        - pip_ca
+        - pip_config
+
+secrets:
+  pip_ca:
+    file: ./.certs/windows-ca.pem
+  pip_config:
+    file: ./.pip/pip.conf
