@@ -107,7 +107,15 @@ REDIS_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [REDIS_URL]},
+        'CONFIG': {
+            'hosts': [{
+                'address': REDIS_URL,
+                # Channels waits for messages with a blocking Redis command.
+                # redis-py 8's 5s default races Channels' own 5s blocking timeout.
+                'socket_timeout': None,
+                'socket_connect_timeout': 5,
+            }],
+        },
     },
 }
 
