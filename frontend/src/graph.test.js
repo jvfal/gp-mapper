@@ -58,8 +58,10 @@ test("lateral handles survive saving and restoring a board", () => {
 });
 
 test("time labels round up the final minute and expose expiration", () => {
-  assert.equal(remainingTime(60_001, 0), "2m");
-  assert.equal(remainingTime(3_660_000, 0), "1h 01m");
+  assert.equal(remainingTime(60_001, 0), "1m 01s");
+  assert.equal(remainingTime(3_660_000, 0), "1h 01m 00s");
+  assert.equal(remainingTime(59_000, 0), "59s");
+  assert.equal(remainingTime(1, 0), "1s");
   assert.equal(remainingTime(0, 1), "Expirada");
 });
 

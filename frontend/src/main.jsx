@@ -262,7 +262,7 @@ function App({ board, user, onBack, onReload }) {
     };
   }, [flow.fitView, flow.getNodes]);
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {

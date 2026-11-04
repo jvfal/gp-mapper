@@ -48,12 +48,13 @@ export function connectionExists(edges, source, target, exceptId = null) {
 }
 
 export function remainingTime(expiresAt, now = Date.now(), expiredLabel = "Expirada") {
-  const minutes = Math.max(0, Math.ceil((expiresAt - now) / 60_000));
-  if (!minutes) return expiredLabel;
-  const hours = Math.floor(minutes / 60);
-  return hours
-    ? `${hours}h ${String(minutes % 60).padStart(2, "0")}m`
-    : `${minutes}m`;
+  const seconds = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+  if (!seconds) return expiredLabel;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainder = String(seconds % 60).padStart(2, "0");
+  if (hours) return `${hours}h ${String(minutes).padStart(2, "0")}m ${remainder}s`;
+  return minutes ? `${minutes}m ${remainder}s` : `${seconds}s`;
 }
 
 export function serializeBoard(nodes, edges, viewport, canvasWidth) {
