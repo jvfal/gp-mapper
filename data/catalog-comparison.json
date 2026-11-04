@@ -1,0 +1,232 @@
+{
+  "map_count": 400,
+  "preserved_ids": 400,
+  "new_maps": 0,
+  "existing_maps_absent_from_tracker": [],
+  "maps_absent_from_sugarfox": [],
+  "chests_from_sugarfox": 1848,
+  "chest_differences_resolved_with_sugarfox": [
+    {
+      "map": "Cetitos-Avixnum",
+      "type": "BLUE",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Cetitos-Aximam",
+      "type": "GREEN",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 2,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Filos-Abalam",
+      "type": "GREEN",
+      "tracker_count": 3,
+      "sugarfox_sizes": {
+        "small": 4,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Fonitos-Amaurom",
+      "type": "GOLD",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Fouos-Amaurom",
+      "type": "GOLD",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Fynites-Aeaosum",
+      "type": "GREEN",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 2,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Oiros-Alaiam",
+      "type": "GREEN",
+      "tracker_count": 2,
+      "sugarfox_sizes": {
+        "small": 5,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Qiient-Al-Tersas",
+      "type": "GREEN",
+      "tracker_count": 5,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Qiient-Al-Tersas",
+      "type": "BLUE",
+      "tracker_count": 0,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Quaent-Al-Odesum",
+      "type": "BLUE",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Sasitos-Oyarlum",
+      "type": "BLUE",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Sasitos-Oyarlum",
+      "type": "GOLD",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Secent-Al-Odetis",
+      "type": "BLUE",
+      "tracker_count": 0,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Sectun-OC-Odesis",
+      "type": "GREEN",
+      "tracker_count": 5,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Sectun-OC-Odesis",
+      "type": "BLUE",
+      "tracker_count": 0,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Settun-In-Nusis",
+      "type": "GREEN",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 5,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Settun-Odetum",
+      "type": "GREEN",
+      "tracker_count": 0,
+      "sugarfox_sizes": {
+        "small": 5,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Settun-Odetum",
+      "type": "BLUE",
+      "tracker_count": 5,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Settun-Vynsis",
+      "type": "BLUE",
+      "tracker_count": 2,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Silos-Oyarlum",
+      "type": "BLUE",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 0,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Silos-Oyarlum",
+      "type": "GOLD",
+      "tracker_count": 1,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 1
+      },
+      "selected_source": "sugarfox"
+    },
+    {
+      "map": "Siros-Ofurlos",
+      "type": "GREEN",
+      "tracker_count": 0,
+      "sugarfox_sizes": {
+        "small": 1,
+        "large": 0
+      },
+      "selected_source": "sugarfox"
+    }
+  ],
+  "resources_without_size": 817,
+  "dungeons_without_classification": 305
+}

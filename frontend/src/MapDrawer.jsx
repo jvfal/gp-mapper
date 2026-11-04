@@ -9,7 +9,7 @@ export function CatalogDrawer({ catalog, nodes, addMap, close }) {
   const [tier, setTier] = useState(null);
   const ids = new Set(nodes.map((node) => node.data.mapId));
   const maps = catalog.filter(
-    (map) => (!tier || map.tier === tier) && matchesMapName(map.name, query),
+    (map) => map.is_active !== false && (!tier || map.tier === tier) && matchesMapName(map.name, query),
   );
   return (
     <aside className="map-drawer" aria-label={t("catalog.title")}>
@@ -107,14 +107,7 @@ export function MapInspector({ map, close }) {
       </div>
       <div className="inspector-content">
         {map.image_url && (
-          <div className="map-image">
-            <img
-              src={map.image_url}
-              alt={t("details.image", {
-                name: map.name,
-              })}
-            />
-          </div>
+          <img className="map-image" src={map.image_url} alt={t("details.image", { name: map.name })} />
         )}
         <div className="map-summary">
           <span className={`tier-badge t${map.tier}`}>T{map.tier}</span>
@@ -140,7 +133,7 @@ export function MapInspector({ map, close }) {
                   {t(`features.types.${feature.type}`, {
                     defaultValue: feature.type,
                   })}
-                  <small>{t(`features.sizes.${feature.size}`)}</small>
+                  {feature.size !== "unknown" && <small>{t(`features.sizes.${feature.size}`)}</small>}
                 </span>
               </div>
             ))}

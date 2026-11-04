@@ -132,7 +132,8 @@
     "largeBadge": "G",
     "sizes": {
       "small": "Pequeño",
-      "large": "Grande"
+      "large": "Grande",
+      "unknown": "No indicado"
     },
     "types": {
       "WOOD": "Madera",
@@ -144,7 +145,8 @@
       "BLUE": "Cofre azul",
       "GOLD": "Cofre dorado",
       "DUNGEON_SOLO": "Dungeon solo",
-      "DUNGEON_GROUP": "Dungeon de grupo"
+      "DUNGEON_GROUP": "Dungeon de grupo",
+      "DUNGEON": "Dungeon"
     }
   },
   "handles": {

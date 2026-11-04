@@ -17,7 +17,8 @@ export const EdgeContext = createContext({
 });
 export function FeatureChip({ feature }) {
   const { t } = useTranslation("mapper");
-  const description = `${feature.count} × ${t(`features.types.${feature.type}`, { defaultValue: feature.type })} · ${t(`features.sizes.${feature.size}`)}`;
+  const sizeLabel = feature.size === "unknown" ? "" : ` · ${t(`features.sizes.${feature.size}`)}`;
+  const description = `${feature.count} × ${t(`features.types.${feature.type}`, { defaultValue: feature.type })}${sizeLabel}`;
   return (
     <span
       className={`feature-chip feature-${feature.size}`}

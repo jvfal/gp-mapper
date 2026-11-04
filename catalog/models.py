@@ -5,6 +5,7 @@ from django.db import models
 class Size(models.TextChoices):
     SMALL = 'small', 'Pequeno'
     LARGE = 'large', 'Grande'
+    UNKNOWN = 'unknown', 'Não informado'
 
 
 class RoadMap(models.Model):
@@ -17,9 +18,10 @@ class RoadMap(models.Model):
     id = models.PositiveIntegerField(primary_key=True, validators=[MinValueValidator(1)])
     name = models.CharField('nome', max_length=100, unique=True)
     tier = models.PositiveSmallIntegerField(choices=Tier.choices, db_index=True)
+    is_active = models.BooleanField('no catálogo atual', default=True)
     image = models.CharField(
         'arquivo da imagem', max_length=255, blank=True,
-        validators=[RegexValidator(r'^[A-Za-z0-9_-]+\.png$', 'Informe apenas o nome do PNG.')],
+        validators=[RegexValidator(r'^[A-Za-z0-9_-]+\.(png|webp)$', 'Informe apenas o nome do PNG ou WebP.')],
     )
 
     class Meta:
@@ -40,7 +42,7 @@ class RoadMap(models.Model):
 
 
 class MapFeature(models.Model):
-    size = models.CharField('tamanho', max_length=5, choices=Size.choices)
+    size = models.CharField('tamanho', max_length=7, choices=Size.choices)
     count = models.PositiveSmallIntegerField('quantidade', validators=[MinValueValidator(1)])
 
     class Meta:
@@ -125,6 +127,7 @@ class MapDungeon(MapFeature):
     class DungeonType(models.TextChoices):
         SOLO = 'DUNGEON_SOLO', 'Solo'
         GROUP = 'DUNGEON_GROUP', 'Grupo'
+        GENERIC = 'DUNGEON', 'Dungeon'
 
     road_map = models.ForeignKey(RoadMap, on_delete=models.CASCADE, related_name='dungeons')
     dungeon_type = models.CharField('dungeon', max_length=20, choices=DungeonType.choices)
@@ -139,13 +142,15 @@ class MapDungeon(MapFeature):
                 fields=['road_map', 'dungeon_type', 'size'], name='catalog_dungeon_unique',
             ),
             models.CheckConstraint(
-                condition=models.Q(dungeon_type__in=['DUNGEON_SOLO', 'DUNGEON_GROUP']),
+                condition=models.Q(dungeon_type__in=['DUNGEON_SOLO', 'DUNGEON_GROUP', 'DUNGEON']),
                 name='catalog_dungeon_type_valid',
             ),
         ]
 
     @property
     def icon_static_path(self):
+        if self.dungeon_type == self.DungeonType.GENERIC:
+            return 'avalon/icons/dungeon_generic.png'
         return f'avalon/icons/{self.dungeon_type.lower()}.png'
 
     def __str__(self):

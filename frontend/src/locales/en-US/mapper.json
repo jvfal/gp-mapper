@@ -132,7 +132,8 @@
     "largeBadge": "L",
     "sizes": {
       "small": "Small",
-      "large": "Large"
+      "large": "Large",
+      "unknown": "Not specified"
     },
     "types": {
       "WOOD": "Wood",
@@ -144,7 +145,8 @@
       "BLUE": "Blue chest",
       "GOLD": "Gold chest",
       "DUNGEON_SOLO": "Solo dungeon",
-      "DUNGEON_GROUP": "Group dungeon"
+      "DUNGEON_GROUP": "Group dungeon",
+      "DUNGEON": "Dungeon"
     }
   },
   "handles": {

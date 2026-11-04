@@ -11,7 +11,7 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
   const ref = useRef(null);
   const input = useRef(null);
   const selected = catalog.find((map) => map.id === value);
-  const options = catalog.filter((map) => matchesMapName(map.name, query));
+  const options = catalog.filter((map) => map.is_active !== false && matchesMapName(map.name, query));
   useEffect(() => {
     if (open)
       document.getElementById(`${id}-option-${active}`)?.scrollIntoView({

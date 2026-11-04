@@ -77,6 +77,8 @@ class Command(BaseCommand):
         except (OSError, ValueError) as exc:
             raise CommandError(f'Nao foi possivel ler o catalogo: {exc}') from exc
         rows = validate_catalog(payload)
+        if payload.get('complete_catalog') and not rows:
+            raise CommandError('O catalogo completo nao pode estar vazio.')
         if options['dry_run']:
             self.stdout.write(self.style.SUCCESS(f'Catalogo valido: {len(rows)} mapas. Nenhuma alteracao.'))
             return
@@ -86,7 +88,10 @@ class Command(BaseCommand):
             with transaction.atomic():
                 for row in rows:
                     roadmap, is_new = RoadMap.objects.update_or_create(
-                        pk=row['id'], defaults={field: row[field] for field in ('name', 'tier', 'image')},
+                        pk=row['id'], defaults={
+                            **{field: row[field] for field in ('name', 'tier', 'image')},
+                            'is_active': True,
+                        },
                     )
                     created += is_new
                     for collection, model, type_field in FEATURES:
@@ -99,6 +104,11 @@ class Command(BaseCommand):
                             retained.append(instance.pk)
                         # The file is authoritative for features of imported maps only.
                         model.objects.filter(road_map=roadmap).exclude(pk__in=retained).delete()
+                if payload.get('complete_catalog'):
+                    # Keep IDs and board references for retired maps; hide from new selections.
+                    RoadMap.objects.exclude(pk__in=[row['id'] for row in rows]).update(
+                        is_active=False, image='',
+                    )
         except IntegrityError as exc:
             raise CommandError('Conflito com dados existentes. A importacao foi revertida.') from exc
         self.stdout.write(self.style.SUCCESS(

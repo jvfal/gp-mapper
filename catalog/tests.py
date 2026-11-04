@@ -98,6 +98,41 @@ class CatalogTests(TestCase):
         self.import_rows([self.row], dry_run=True)
         self.assertFalse(RoadMap.objects.exists())
 
+    def test_complete_catalog_updates_existing_board_maps_and_can_be_reimported(self):
+        from mapper.models import Board, BoardNode
+
+        self.import_rows([self.row])
+        retired = RoadMap.objects.create(pk=10000, name='Retired-Map', tier=4, image='old.png')
+        user = get_user_model().objects.create_user(username='catalog-owner')
+        board = Board.objects.create(owner=user, name='Existing exploration')
+        node = BoardNode.objects.create(board=board, road_map_id=1, x=10, y=20)
+        old_node = BoardNode.objects.create(board=board, road_map=retired, x=30, y=40)
+        catalog_path = Path(__file__).resolve().parent.parent / 'maps.json'
+        call_command('import_maps', str(catalog_path), stdout=StringIO())
+        counts = (MapResource.objects.count(), MapChest.objects.count(), MapDungeon.objects.count())
+        call_command('import_maps', str(catalog_path), stdout=StringIO())
+        self.assertEqual(counts, (
+            MapResource.objects.count(), MapChest.objects.count(), MapDungeon.objects.count(),
+        ))
+        self.assertEqual(RoadMap.objects.filter(is_active=True).count(), 400)
+        self.assertEqual(RoadMap.objects.get(pk=1).name, self.row['name'])
+        node.refresh_from_db()
+        old_node.refresh_from_db()
+        self.assertEqual((node.road_map_id, node.x, node.y), (1, 10, 20))
+        self.assertEqual(old_node.road_map_id, retired.pk)
+        retired.refresh_from_db()
+        self.assertFalse(retired.is_active)
+        self.assertEqual(retired.image, '')
+        opavun = RoadMap.objects.get(name='Fones-Opavun')
+        self.assertEqual(set(opavun.chests.values_list('chest_type', 'size', 'count')), {
+            ('GREEN', 'small', 2), ('GOLD', 'small', 1), ('GOLD', 'large', 2),
+        })
+        self.assertEqual(list(opavun.resources.values_list('resource_type', 'size', 'count')), [
+            ('WOOD', 'unknown', 1),
+        ])
+        self.assertEqual(opavun.dungeons.get().dungeon_type, 'DUNGEON')
+        self.assertFalse(RoadMap.objects.get(name='Cetitos-Avixnum').chests.filter(chest_type='BLUE').exists())
+
     def test_database_enforces_feature_constraints(self):
         roadmap = RoadMap.objects.create(pk=1, name='Test-Map', tier=6)
         for model, field, kind in [
@@ -141,13 +176,13 @@ class CatalogTests(TestCase):
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
         'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
     })
-    def test_admin_shows_map_preview_and_normalized_inlines(self):
+    def test_admin_hides_unverified_map_images_and_shows_normalized_inlines(self):
         self.import_rows([self.row])
         user = get_user_model().objects.create_superuser(username='catalog-admin', password=None)
         self.client.force_login(user)
         response = self.client.get(reverse('admin:catalog_roadmap_change', args=[1]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'avalon/maps/Cases-Ugumlos_T_6.png')
+        self.assertNotContains(response, 'avalon/maps/')
         self.assertContains(response, 'name="resources-TOTAL_FORMS"')
         self.assertContains(response, 'name="chests-TOTAL_FORMS"')
         self.assertContains(response, 'name="dungeons-TOTAL_FORMS"')
@@ -155,7 +190,7 @@ class CatalogTests(TestCase):
 
 class ResourceMigrationTests(TransactionTestCase):
     def tearDown(self):
-        MigrationExecutor(connection).migrate([('catalog', '0003_separate_map_features')])
+        MigrationExecutor(connection).migrate([('catalog', '0005_alter_roadmap_image')])
         super().tearDown()
 
     def test_existing_data_survives_merge_and_reverse_migration(self):
