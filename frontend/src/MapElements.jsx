@@ -17,11 +17,12 @@ export const EdgeContext = createContext({
 });
 export function FeatureChip({ feature }) {
   const { t } = useTranslation("mapper");
+  const highlightLarge = feature.type === "GOLD" && feature.size === "large";
   const sizeLabel = feature.size === "unknown" ? "" : ` · ${t(`features.sizes.${feature.size}`)}`;
   const description = `${feature.count} × ${t(`features.types.${feature.type}`, { defaultValue: feature.type })}${sizeLabel}`;
   return (
     <span
-      className={`feature-chip feature-${feature.size}`}
+      className={`feature-chip${highlightLarge ? " feature-large" : ""}`}
       title={description}
       aria-label={description}
     >
@@ -33,7 +34,7 @@ export function FeatureChip({ feature }) {
         draggable="false"
       />
       <strong>{feature.count}</strong>
-      {feature.size === "large" && (
+      {highlightLarge && (
         <span className="feature-size" aria-hidden="true">
           {t("features.largeBadge")}
         </span>
