@@ -10,7 +10,7 @@ export function cityIcon(map) {
   return `/static/avalon/icons/${cityPalette[city] ? `city-${city.toLowerCase().replaceAll(' ', '-')}` : 'city'}.png`;
 }
 
-export const zoneColors = { road: '#83cbe6', city: '#d8bc63', starter: '#9fb5c1', blue: '#78b8e7', yellow: '#d7bd59', red: '#d57c7c', black: '#9c90b6' };
+export const zoneColors = { road: '#dfc98e', city: '#d8bc63', starter: '#9fb5c1', blue: '#78b8e7', yellow: '#d7bd59', red: '#d57c7c', black: '#dfc98e' };
 
 const cityPalette = {
   Thetford: ['#e6dcf3', '#b59acb'],
@@ -50,7 +50,7 @@ export function ZoneBadge({ map }) {
   if (isCity(map)) return <span className="city-badge" title={t(`zones.labels.${kind}`)} aria-label={t(`zones.labels.${kind}`)}>
     <img src={cityIcon(map)} width="22" height="22" alt="" draggable="false" />
   </span>;
-  return <span className={`tier-badge ${kind === 'road' ? `t${map.tier}` : `zone-${kind}`}`} title={t(`zones.labels.${kind}`)}>
+  return <span className={`tier-badge zone-${kind}`} title={t(`zones.labels.${kind}`)}>
     {map.tier ? `T${map.tier}` : '—'}
   </span>;
 }

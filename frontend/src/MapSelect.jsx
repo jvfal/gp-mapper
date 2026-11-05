@@ -124,7 +124,7 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(map)}
             >
-              <span className={`tier-dot t${map.tier}`} style={map.zone_type && map.zone_type !== 'road' ? { background: zoneColors[map.zone_type] } : undefined} />
+              <span className="tier-dot" style={{ background: zoneColors[map.zone_type || 'road'] }} />
               <span>{map.name}</span>
               {boardIds.has(map.id) && <small>{t("select.onBoard")}</small>}
               <span className="option-tier"><ZoneBadge map={map} /></span>

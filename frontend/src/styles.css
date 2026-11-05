@@ -1094,13 +1094,10 @@ h2 {
   flex-shrink: 0;
   letter-spacing: 0.3px;
 }
-.tier-badge.t4 { color: #4c899b; background: #d5e8ee; border-color: #b3d2dc; }
-.tier-badge.t6 { color: #8b6a2b; background: #eee3c5; border-color: #dfc98e; }
-.tier-badge.t8 { color: #7b5da4; background: #e7dff1; border-color: #cdbce3; }
+.tier-badge.zone-road, .tier-badge.zone-black { color: #8b6a2b; background: #eee3c5; border-color: #dfc98e; }
 .tier-badge.zone-blue { background: #c4e1f7; color: #285b82; border-color: #8fb9da; }
 .tier-badge.zone-yellow { background: #f4e49b; color: #715815; border-color: #cdb55a; }
 .tier-badge.zone-red { background: #efc8cc; color: #863b44; border-color: #cf959d; }
-.tier-badge.zone-black { background: #36333d; color: #f4f1f8; border-color: #696171; }
 .hideout-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 23px; border: 1px solid #c96570; border-radius: 4px; background: transparent; vertical-align: middle; flex-shrink: 0; }
 .hideout-badge img, .city-badge img { display: block; object-fit: contain; filter: drop-shadow(0 1px 1px #0003); }
 .city-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 5px; background: #33434e; flex-shrink: 0; vertical-align: middle; }
