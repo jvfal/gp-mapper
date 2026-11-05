@@ -114,7 +114,11 @@ class CatalogTests(TestCase):
         self.assertEqual(counts, (
             MapResource.objects.count(), MapChest.objects.count(), MapDungeon.objects.count(),
         ))
-        self.assertEqual(RoadMap.objects.filter(is_active=True).count(), 400)
+        self.assertEqual(RoadMap.objects.filter(is_active=True).count(), 814)
+        self.assertEqual(RoadMap.objects.filter(is_active=True, zone_type='road').count(), 400)
+        self.assertFalse(RoadMap.objects.filter(is_active=True, tier__isnull=True).exists())
+        self.assertEqual(RoadMap.objects.get(name='Whitebank Cross').tier, 5)
+        self.assertEqual(RoadMap.objects.get(name='Drownfield Sink').tier, 8)
         self.assertEqual(RoadMap.objects.get(pk=1).name, self.row['name'])
         node.refresh_from_db()
         old_node.refresh_from_db()
@@ -132,6 +136,23 @@ class CatalogTests(TestCase):
         ])
         self.assertEqual(opavun.dungeons.get().dungeon_type, 'DUNGEON')
         self.assertFalse(RoadMap.objects.get(name='Cetitos-Avixnum').chests.filter(chest_type='BLUE').exists())
+
+    def test_mainland_import_keeps_unknown_tier_and_features_without_changing_roads(self):
+        mainland = {'id': 404, 'name': 'Whitebank Cross', 'zone_type': 'black', 'tier': None,
+                    'features_known': False, 'image': '', 'resources': [], 'chests': [], 'dungeons': []}
+        self.import_rows([self.row, mainland])
+        self.import_rows([self.row, mainland])
+        zone = RoadMap.objects.get(pk=404)
+        self.assertEqual(zone.zone_type, 'black')
+        self.assertIsNone(zone.tier)
+        self.assertFalse(zone.features_known)
+        self.assertEqual(RoadMap.objects.get(pk=1).resources.count(), 2)
+        self.assertEqual(RoadMap.objects.count(), 2)
+        with self.assertRaises(ValidationError):
+            RoadMap(name='Missing-Road-Tier', zone_type='road', tier=None).clean()
+        mainland['zone_type'] = 'invalid'
+        with self.assertRaises(CommandError):
+            self.import_rows([mainland])
 
     def test_database_enforces_feature_constraints(self):
         roadmap = RoadMap.objects.create(pk=1, name='Test-Map', tier=6)
@@ -190,7 +211,8 @@ class CatalogTests(TestCase):
 
 class ResourceMigrationTests(TransactionTestCase):
     def tearDown(self):
-        MigrationExecutor(connection).migrate([('catalog', '0005_alter_roadmap_image')])
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes('catalog'))
         super().tearDown()
 
     def test_existing_data_survives_merge_and_reverse_migration(self):

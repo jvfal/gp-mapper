@@ -1,5 +1,6 @@
 export function Icon({ name, size = 18, ...props }) {
   const paths = {
+    home: <><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7" /></>,
     plus: <path d="M12 5v14M5 12h14" />,
     user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
     globe: <><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18" /></>,

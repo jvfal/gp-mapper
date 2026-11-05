@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './icons';
+import { zoneColors, cityIcon, isCity, mapPalette } from './ZoneBadge';
 
 const width = 220;
 const height = 70;
@@ -36,10 +37,10 @@ function BoardPreview({ preview, now }) {
         return <path key={index} d={`M${x1},${y1} L${x2},${y2}`} fill="none" stroke={expired ? '#53606b' : '#83cbe6'} strokeWidth="4" strokeDasharray={expired ? '8 6' : undefined} />;
       })}
       {nodes.map((node) => <g key={node.id} transform={`translate(${node.x} ${node.y})`}>
-        <rect width={width} height={height} rx="12" fill="#263640" stroke="#688999" strokeWidth="1.5" />
-        <rect width="4" height="34" x="0" y="18" rx="2" fill={node.tier === 8 ? '#d3aa68' : node.tier === 6 ? '#9f9adb' : '#80b9cf'} />
-        <text x="16" y="30" fill="#f0f4f6" fontSize="14" fontWeight="600">{node.name.length > 24 ? node.name.slice(0, 23) + '…' : node.name}</text>
-        <text x="16" y="52" fill="#9fb2be" fontSize="11">T{node.tier}</text>
+        <rect width={width} height={height} rx="12" fill={mapPalette(node)?.[0] || '#263640'} stroke={node.isHome ? '#c49c49' : mapPalette(node)?.[1] || '#688999'} strokeWidth={node.isHome ? '3' : '1.5'} />
+        <rect width="4" height="34" x="0" y="18" rx="2" fill={zoneColors[node.zoneType || 'road']} />
+        <text x="16" y="30" fill={mapPalette(node) && node.zoneType !== 'black' ? '#263640' : '#f0f4f6'} fontSize="14" fontWeight="600">{node.name.length > 24 ? node.name.slice(0, 23) + '…' : node.name}</text>
+        {isCity(node) ? <><rect x="13" y="37" width="27" height="27" rx="4" fill="#33434e" /><image href={cityIcon(node)} x="15" y="38" width="24" height="24" /></> : <text x="16" y="52" fill={mapPalette(node) && node.zoneType !== 'black' ? '#52616d' : '#bdc6d0'} fontSize="11">{node.tier ? `T${node.tier}` : '—'}</text>}
       </g>)}
     </svg>
   </div>;

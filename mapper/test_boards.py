@@ -72,6 +72,27 @@ class BoardTests(TestCase):
         self.assertEqual(self.put(changed).status_code, 409)
         self.assertEqual(self.board.nodes.count(), 2)
 
+    def test_home_is_saved_and_realtime_moves_preserve_it(self):
+        from uuid import uuid4
+        from .realtime import mutate_board
+        RoadMap.objects.filter(pk=1).update(is_hideout=True)
+        self.assertEqual(self.put().status_code, 200)
+        marked = mutate_board(self.board.pk, self.client.session.session_key, str(uuid4()),
+                              [{'type': 'node.home', 'mapId': 1, 'isHome': True}])
+        self.assertTrue(next(n for n in marked['state']['nodes'] if n['mapId'] == 1)['isHome'])
+        moved = mutate_board(self.board.pk, self.client.session.session_key, str(uuid4()),
+                             [{'type': 'node.move', 'mapId': 1, 'position': {'x': 80, 'y': 90}}])
+        node = next(n for n in moved['state']['nodes'] if n['mapId'] == 1)
+        self.assertTrue(node['isHome'])
+        self.assertEqual(node['position'], {'x': 80, 'y': 90})
+        self.assertTrue(self.client.get(self.url).json()['board']['state']['nodes'][0]['isHome'])
+        with self.assertRaisesMessage(ValueError, 'invalid_home'):
+            mutate_board(self.board.pk, self.client.session.session_key, str(uuid4()),
+                         [{'type': 'node.home', 'mapId': 2, 'isHome': True}])
+        mutate_board(self.board.pk, self.client.session.session_key, str(uuid4()),
+                     [{'type': 'node.home', 'mapId': 1, 'isHome': False}])
+        self.assertFalse(self.board.nodes.get(road_map_id=1).is_home)
+
     def test_owner_can_delete_saved_graph_without_deleting_catalog(self):
         from unittest.mock import patch
         self.put()

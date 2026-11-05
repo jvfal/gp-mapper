@@ -1047,9 +1047,9 @@ h2 {
 .road-card {
   width: 252px;
   border-radius: 9px;
-  background: #eef2f5;
+  background: var(--region-bg, #eef2f5);
   color: #18212a;
-  border: 1px solid #ced9e0;
+  border: 1px solid var(--region-border, #ced9e0);
   box-shadow: 0 5px 18px #0003;
   transition:
     box-shadow 0.15s,
@@ -1079,6 +1079,9 @@ h2 {
   line-height: 1.4;
 }
 .tier-badge {
+  color: #52616d;
+  background: #e0e7ec;
+  border: 1px solid #bac8d2;
   border-radius: 4px;
   min-width: 26px;
   height: 23px;
@@ -1091,21 +1094,51 @@ h2 {
   flex-shrink: 0;
   letter-spacing: 0.3px;
 }
-.tier-badge.t4 {
-  color: #4c899b;
-  background: #d5e8ee;
-  border: 1px solid #b3d2dc;
+.tier-badge.t4 { color: #4c899b; background: #d5e8ee; border-color: #b3d2dc; }
+.tier-badge.t6 { color: #8b6a2b; background: #eee3c5; border-color: #dfc98e; }
+.tier-badge.t8 { color: #7b5da4; background: #e7dff1; border-color: #cdbce3; }
+.tier-badge.zone-blue { background: #c4e1f7; color: #285b82; border-color: #8fb9da; }
+.tier-badge.zone-yellow { background: #f4e49b; color: #715815; border-color: #cdb55a; }
+.tier-badge.zone-red { background: #efc8cc; color: #863b44; border-color: #cf959d; }
+.tier-badge.zone-black { background: #36333d; color: #f4f1f8; border-color: #696171; }
+.hideout-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 23px; border: 1px solid #c96570; border-radius: 4px; background: transparent; vertical-align: middle; flex-shrink: 0; }
+.hideout-badge img, .city-badge img { display: block; object-fit: contain; filter: drop-shadow(0 1px 1px #0003); }
+.city-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 5px; background: #33434e; flex-shrink: 0; vertical-align: middle; }
+.road-card-heading h3 { flex: 1; min-width: 0; }
+.road-card.is-home {
+  border-color: #ffd36a;
+  box-shadow: inset 0 0 0 1px #ffe5a480, 0 0 0 2px #eeb642bb,
+    0 0 16px 4px #ffc94d66, 0 0 36px 9px #e9a62c33, 0 5px 18px #0004;
 }
-.tier-badge.t6 {
-  color: #8b6a2b;
-  background: #eee3c5;
-  border: 1px solid #dfc98e;
+.road-card.is-home:hover {
+  box-shadow: inset 0 0 0 1px #fff0bd, 0 0 0 2px #ffd36a,
+    0 0 20px 5px #ffc94d88, 0 0 42px 11px #e9a62c44, 0 5px 18px #0004;
 }
-.tier-badge.t8 {
-  color: #7b5da4;
-  background: #e7dff1;
-  border: 1px solid #cdbce3;
+.road-card.is-home.is-selected {
+  box-shadow: inset 0 0 0 1px #ffe5a480, 0 0 0 2px #ffd36a,
+    0 0 0 5px #74b6ec88, 0 0 20px 6px #ffc94d77, 0 0 40px 10px #e9a62c33, 0 5px 18px #0004;
 }
+.home-marker { display: inline-flex; color: #b48214; filter: drop-shadow(0 0 3px #ffc94d99); flex-shrink: 0; }
+.home-toggle { width: 100%; margin-bottom: 16px; justify-content: center; }
+.home-toggle.is-home { border-color: #a38b54; color: #eed69e; }
+.home-status { display: flex; align-items: center; gap: 7px; color: #eed69e; margin-bottom: 16px; }
+.road-card.zone-black { color: #f0f3f6; }
+.road-card.zone-black .road-card-audit { color: #bdc6d0; border-top-color: #ffffff1a; }
+.tier-filters { flex-wrap: wrap; }
+/* Reconnect grips cover the visible node point, accounting for React Flow's
+   outside anchors and our enlarged handle hit area. Keep free handles usable. */
+.react-flow__edge.source-top .react-flow__edgeupdater-source,
+.react-flow__edge.target-top .react-flow__edgeupdater-target { transform: translateY(24px); }
+.react-flow__edge.source-bottom .react-flow__edgeupdater-source,
+.react-flow__edge.target-bottom .react-flow__edgeupdater-target { transform: translateY(-24px); }
+.react-flow__edge.source-left .react-flow__edgeupdater-source,
+.react-flow__edge.target-left .react-flow__edgeupdater-target { transform: translateX(24px); }
+.react-flow__edge.source-right .react-flow__edgeupdater-source,
+.react-flow__edge.target-right .react-flow__edgeupdater-target { transform: translateX(-24px); }
+.react-flow__edgeupdater { cursor: grab; }
+.react-flow__edge.selected .react-flow__edgeupdater,
+.react-flow__edgeupdater:hover { fill: #83cbe633; stroke: #83cbe6; stroke-width: 1.5px; }
+.catalog-zone-filter { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; color: #b6c5cf; background: #20292f; margin-bottom: 12px; font-size: 12px; }
 .road-card-features {
   padding: 0 13px 12px;
   display: grid;
@@ -1201,6 +1234,9 @@ h2 {
   border-color: #d9f9e6;
   box-shadow: 0 0 0 5px #92dab244;
 }
+/* Reconnectable and selected edges are elevated SVGs. Keep HTML timers above
+   those paths from their first render, including while editing a connection. */
+.react-flow__edgelabel-renderer { z-index: 2000; }
 .edge-time {
   position: absolute;
   pointer-events: all;
@@ -1428,6 +1464,7 @@ h2 {
   font-size: 9px;
   opacity: 0.85;
 }
+.catalog-item .hideout-badge { width: 28px; height: 27px; }
 .catalog-map-name {
   flex: 1;
   font-size: 11px;

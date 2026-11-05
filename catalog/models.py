@@ -1,4 +1,5 @@
 from django.core.validators import MinValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -9,15 +10,40 @@ class Size(models.TextChoices):
 
 
 class RoadMap(models.Model):
+    class Biome(models.TextChoices):
+        HIGHLAND = 'highland', 'Highland'
+        FOREST = 'forest', 'Forest'
+        SWAMP = 'swamp', 'Swamp'
+        STEPPE = 'steppe', 'Steppe'
+        MOUNTAIN = 'mountain', 'Mountain'
+
+    class ZoneType(models.TextChoices):
+        ROAD = 'road', 'Roads'
+        STARTER = 'starter', 'Starter city'
+        CITY = 'city', 'City or portal'
+        BLUE = 'blue', 'Blue zone'
+        YELLOW = 'yellow', 'Yellow zone'
+        RED = 'red', 'Red zone'
+        BLACK = 'black', 'Black zone'
+
     class Tier(models.IntegerChoices):
+        ONE = 1, 'T1'
+        TWO = 2, 'T2'
+        THREE = 3, 'T3'
         FOUR = 4, 'T4'
+        FIVE = 5, 'T5'
         SIX = 6, 'T6'
+        SEVEN = 7, 'T7'
         EIGHT = 8, 'T8'
 
     # Stable identifier from maps.json; shared mappers will reference this catalog.
     id = models.PositiveIntegerField(primary_key=True, validators=[MinValueValidator(1)])
     name = models.CharField('nome', max_length=100, unique=True)
-    tier = models.PositiveSmallIntegerField(choices=Tier.choices, db_index=True)
+    tier = models.PositiveSmallIntegerField(choices=Tier.choices, db_index=True, null=True, blank=True)
+    zone_type = models.CharField(max_length=7, choices=ZoneType.choices, default=ZoneType.ROAD)
+    features_known = models.BooleanField(default=True)
+    is_hideout = models.BooleanField('zona de HO', default=False)
+    biome = models.CharField('bioma', max_length=8, choices=Biome.choices, blank=True)
     is_active = models.BooleanField('no catálogo atual', default=True)
     image = models.CharField(
         'arquivo da imagem', max_length=255, blank=True,
@@ -30,7 +56,9 @@ class RoadMap(models.Model):
         verbose_name_plural = 'mapas'
         constraints = [
             models.CheckConstraint(condition=models.Q(id__gt=0), name='catalog_map_id_positive'),
-            models.CheckConstraint(condition=models.Q(tier__in=[4, 6, 8]), name='catalog_map_tier_valid'),
+            models.CheckConstraint(condition=models.Q(tier__isnull=True) | models.Q(tier__in=list(range(1, 9))), name='catalog_map_tier_valid'),
+            models.CheckConstraint(condition=~models.Q(zone_type='road') | (models.Q(tier__isnull=False) & models.Q(tier__in=[4, 6, 8])), name='catalog_road_tier_valid'),
+            models.CheckConstraint(condition=models.Q(zone_type__in=['road', 'starter', 'city', 'blue', 'yellow', 'red', 'black']), name='catalog_zone_type_valid'),
         ]
 
     @property
@@ -38,7 +66,12 @@ class RoadMap(models.Model):
         return f'avalon/maps/{self.image}' if self.image else ''
 
     def __str__(self):
-        return f'{self.name} (T{self.tier})'
+        return f'{self.name} (T{self.tier})' if self.tier else self.name
+
+    def clean(self):
+        super().clean()
+        if self.zone_type == self.ZoneType.ROAD and self.tier not in (4, 6, 8):
+            raise ValidationError({'tier': 'Road tiers must be 4, 6 or 8.'})
 
 
 class MapFeature(models.Model):

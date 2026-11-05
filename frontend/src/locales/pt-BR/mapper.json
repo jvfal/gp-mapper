@@ -1,4 +1,29 @@
 {
+  "home": { "label": "Nossa casa", "mark": "Marcar como casa", "remove": "Desmarcar como casa" },
+  "zones": {
+    "labels": {
+      "road": "Avalon Roads",
+      "starter": "Cidades iniciais",
+      "city": "Cidades e portais",
+      "blue": "Zona azul",
+      "yellow": "Zona amarela",
+      "red": "Zona vermelha",
+      "black": "Black Zone"
+    },
+    "short": {
+      "road": "Road",
+      "starter": "Inicial",
+      "city": "Cidade",
+      "blue": "Azul",
+      "yellow": "Amarela",
+      "red": "Vermelha",
+      "black": "Black"
+    },
+    "filter": "Tipo de mapa",
+    "all": "Todos os tipos de mapa",
+    "detailsUnavailable": "Os detalhes de recursos estão disponíveis apenas para mapas das Avalon Roads.",
+    "hideout": "Zona de HO — permite esconderijos"
+  },
   "page": {
     "title": "{{guild}} · Mapeador",
     "description": "Planeje suas rotas pelas Avalon Roads com um mapa interativo.",
@@ -304,9 +329,9 @@
     "deleteMaps": "Pode excluir mapas da guild",
     "localAccount": "Conta local",
     "joinedAt": "Cadastro no site",
-    "lastLogin": "Último login",
+    "lastAccess": "Último acesso",
     "unknownDate": "Não informado",
-    "neverLoggedIn": "Ainda não entrou",
+    "accessNotRecorded": "Sem acesso registrado",
     "wrongGuild": "Esta conta está vinculada a outro servidor Discord. Confira a configuração da guild e peça que a pessoa entre novamente.",
     "guildNotConfigured": "Configure o ID do servidor Discord antes de aprovar membros.",
     "title": "Membros",

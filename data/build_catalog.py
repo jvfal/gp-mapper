@@ -14,6 +14,7 @@ RESOURCE_TYPES = {
 CHEST_PROPERTIES = {7: 'GREEN', 8: 'BLUE', 9: 'GOLD'}
 # The PNG referenced by the tracker returns 404; its WebP is available under this name.
 IMAGE_OVERRIDES = {'Qiient-In-Tersom': 'img_webp/Qiient-In-Tersom t6.webp'}
+ZONE_TYPES = {0: 'starter', 1: 'city', 2: 'blue', 3: 'yellow', 4: 'red', 5: 'black', 6: 'road', 7: 'city'}
 
 
 def read(path):
@@ -36,13 +37,18 @@ def unique_by_name(rows, field):
 
 def main():
     tracker = unique_by_name(read(ROOT / 'avalonroads/data.json'), 'name')
+    all_zones = unique_by_name(read(ROOT / 'sugarfox/zoneData.json'), 'displayName')
+    world = read(ROOT / 'ao-data/world-zones.json')
+    mainland_tiers = unique_by_name(world['zones'], 'name')
     sugar = unique_by_name(
-        [row for row in read(ROOT / 'sugarfox/zoneData.json') if row['type'] == 6],
+        [row for row in all_zones.values() if row['type'] == 6],
         'displayName',
     )
     components = {row['Id']: row for row in read(ROOT / 'sugarfox/zoneComponentsData.json')}
-    existing = unique_by_name(read(ROOT.parent / 'maps.json')['maps'], 'name')
-    next_id = max(row['id'] for row in existing.values()) + 1
+    previous = read(ROOT.parent / 'maps.json')
+    existing = unique_by_name(previous['maps'], 'name')
+    reserved_ids = set(previous.get('reserved_ids', []))
+    next_id = max({row['id'] for row in existing.values()} | reserved_ids) + 1
     maps, conflicts = [], []
     chest_count = unknown_resources = unknown_dungeons = 0
 
@@ -112,17 +118,44 @@ def main():
             image_file = f'survey_{source["name"]}_T{source["tier"]}{Path(image_path).suffix}'
         maps.append({
             'id': map_id, 'name': source['name'], 'tier': int(source['tier']),
+            'zone_type': 'road', 'features_known': True,
+            'biome': '',
+            # SugarF0x's L2Rest/L3DeepRest layers are the hideout zones.
+            'is_hideout': sugar[name]['layer'] in (11, 12),
             'image': image_file,
             'image_source_url': image_url,
             'chests': chests, 'resources': resources, 'dungeons': dungeons,
         })
 
+    mainland = {name: source for name, source in all_zones.items() if source['type'] != 6}
+    for name, source in sorted(mainland.items()):
+        if source['type'] not in ZONE_TYPES or name in tracker:
+            raise ValueError(f'Invalid mainland zone: {source["displayName"]}')
+        map_id = existing[name]['id'] if name in existing else next_id
+        if name not in existing:
+            next_id += 1
+        maps.append({
+            'id': map_id, 'name': source['displayName'], 'zone_type': ZONE_TYPES[source['type']],
+            'tier': mainland_tiers[name]['tier'], 'features_known': False,
+            'biome': mainland_tiers[name].get('biome', ''),
+            'is_hideout': False,
+            'image': '', 'image_source_url': None,
+            'resources': [], 'chests': [], 'dungeons': [],
+        })
+    current_names = tracker.keys() | mainland.keys()
+    current_ids = {row['id'] for row in maps}
+    # Reserve retired IDs, including the holes left by the original Roads catalog.
+    reserved_ids |= {row['id'] for name, row in existing.items() if name not in current_names}
+    reserved_ids |= set(range(1, max(current_ids) + 1)) - current_ids
+
     report = {
         'map_count': len(maps),
-        'preserved_ids': len(tracker.keys() & existing.keys()),
-        'new_maps': len(tracker.keys() - existing.keys()),
+        'roads': len(tracker), 'mainland_zones': len(mainland),
+        'zone_types': dict(Counter(row['zone_type'] for row in maps)),
+        'preserved_ids': len(current_names & existing.keys()),
+        'new_maps': len(current_names - existing.keys()),
         'existing_maps_absent_from_tracker': [
-            existing[key]['name'] for key in sorted(existing.keys() - tracker.keys())
+            existing[key]['name'] for key in sorted(existing.keys() - current_names)
         ],
         'maps_absent_from_sugarfox': [
             tracker[key]['name'] for key in sorted(tracker.keys() - sugar.keys())
@@ -134,9 +167,12 @@ def main():
     }
     write(ROOT.parent / 'maps.json', {
         'complete_catalog': True,
+        'reserved_ids': sorted(reserved_ids),
         'sources': {
             'resources_dungeons_tiers_images': 'https://avalonroads-97617.web.app/data.json',
             'chests': 'https://github.com/SugarF0x/albion-navigator',
+            'mainland_names_and_zone_types': 'https://github.com/SugarF0x/albion-navigator/blob/main/Resources/zoneData.json',
+            'mainland_tiers': world['source'],
         },
         'maps': maps,
     })

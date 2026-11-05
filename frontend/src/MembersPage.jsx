@@ -149,7 +149,7 @@ export function MembersPage() {
           </div>
           <dl className="member-details">
             <div><dt>{t('members.joinedAt')}</dt><dd>{member.joinedAt ? <time dateTime={member.joinedAt} title={new Date(member.joinedAt).toLocaleString(i18n.resolvedLanguage)}>{new Date(member.joinedAt).toLocaleDateString(i18n.resolvedLanguage, { day: 'numeric', month: 'short', year: 'numeric' })}</time> : t('members.unknownDate')}</dd></div>
-            <div><dt>{t('members.lastLogin')}</dt><dd>{member.lastLoginAt ? <time dateTime={member.lastLoginAt}>{new Date(member.lastLoginAt).toLocaleString(i18n.resolvedLanguage, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time> : t('members.neverLoggedIn')}</dd></div>
+            <div><dt>{t('members.lastAccess')}</dt><dd>{member.lastAccessAt ? <time dateTime={member.lastAccessAt}>{new Date(member.lastAccessAt).toLocaleString(i18n.resolvedLanguage, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time> : t('members.accessNotRecorded')}</dd></div>
           </dl>
           {member.isProtected ? <p className="muted">{t("members.protected")}</p> : member.pendingApproval ? <>
             <p className="muted">{t("members.pendingMemberHint")}</p>

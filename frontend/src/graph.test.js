@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  alignEdgeHandles,
   connectionExists,
   matchesMapName,
   makeNode,
@@ -110,4 +111,36 @@ test("cyclic and disconnected graphs get distinct, finite positions", () => {
         Number.isFinite(node.position.x) && Number.isFinite(node.position.y),
     ),
   );
+});
+
+test("layout starts at the top map, respects measured sizes and stays stable", () => {
+  const graphNodes = [
+    { ...nodes[0], position: { x: 400, y: 0 }, measured: { width: 252, height: 210 } },
+    { ...nodes[1], position: { x: 400, y: 350 }, measured: { width: 300, height: 160 } },
+    { ...nodes[2], position: { x: 0, y: 350 }, measured: { width: 252, height: 300 } },
+  ];
+  const connections = [{ ...edge, source: 'map-2', target: 'map-1', sourceHandle: 'top', targetHandle: 'bottom' },
+    { ...edge, id: 'b', source: 'map-2', target: 'map-3', sourceHandle: 'left', targetHandle: 'right' }];
+  const result = organizeNodes([...graphNodes].reverse(), connections);
+  const byId = new Map(result.map((node) => [node.id, node]));
+  assert.ok(byId.get('map-1').position.y < byId.get('map-2').position.y);
+  for (const a of result) for (const b of result) {
+    if (a.id === b.id) continue;
+    assert.ok(a.position.x + a.measured.width <= b.position.x || b.position.x + b.measured.width <= a.position.x ||
+      a.position.y + a.measured.height <= b.position.y || b.position.y + b.measured.height <= a.position.y);
+  }
+  assert.deepEqual(organizeNodes(result, connections), result);
+  const aligned = alignEdgeHandles(result, connections);
+  assert.equal(aligned[0].sourceHandle, 'top');
+  assert.equal(aligned[0].targetHandle, 'bottom');
+  assert.equal(aligned[1].sourceHandle, 'bottom');
+  assert.equal(aligned[1].targetHandle, 'top');
+  assert.equal(aligned[0].id, connections[0].id);
+  assert.equal(aligned[0].data.expiresAt, connections[0].data.expiresAt);
+});
+
+test("side-by-side connections face each other after organizing", () => {
+  const aligned = alignEdgeHandles(nodes, [{ ...edge, sourceHandle: 'top', targetHandle: 'bottom' }]);
+  assert.equal(aligned[0].sourceHandle, 'right');
+  assert.equal(aligned[0].targetHandle, 'left');
 });

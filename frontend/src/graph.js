@@ -63,6 +63,7 @@ export function serializeBoard(nodes, edges, viewport, canvasWidth) {
     nodes: nodes.map(({ id, data, position }) => ({
       id,
       mapId: data.mapId,
+      isHome: !!data.isHome,
       position,
     })),
     edges: edges.map(
@@ -100,7 +101,9 @@ export function restoreBoard(saved, catalog) {
     )
       continue;
     ids.add(nodeId(map.id));
-    nodes.push(makeNode(map, { x: item.position.x, y: item.position.y }));
+    const node = makeNode(map, { x: item.position.x, y: item.position.y });
+    node.data.isHome = !!item.isHome;
+    nodes.push(node);
   }
   const edges = [];
   const edgeIds = new Set();
@@ -145,8 +148,18 @@ export function restoreBoard(saved, catalog) {
   };
 }
 
-// Breadth-first layout handles undirected connections, cycles and disconnected maps.
+function nodeSize(node) {
+  return { width: node.measured?.width || node.width || 252,
+    height: node.measured?.height || node.height || 125 };
+}
+
+// Keep the northernmost map as the entry point. Space whole branches rather than
+// individual rows, so a parent stays over its children and tall cards cannot overlap.
 export function organizeNodes(nodes, edges) {
+  if (!nodes.length) return nodes;
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const compare = (a, b) => byId.get(a).position.x - byId.get(b).position.x ||
+    byId.get(a).position.y - byId.get(b).position.y || a.localeCompare(b);
   const adjacent = new Map(nodes.map((node) => [node.id, []]));
   for (const edge of edges) {
     if (!adjacent.has(edge.source) || !adjacent.has(edge.target)) continue;
@@ -155,32 +168,64 @@ export function organizeNodes(nodes, edges) {
   }
   const positions = new Map();
   let offset = 0;
-  for (const root of nodes) {
+  const roots = [...nodes].sort((a, b) => a.position.y - b.position.y || compare(a.id, b.id));
+  for (const root of roots) {
     if (positions.has(root.id)) continue;
     const levels = new Map();
     const queue = [{ id: root.id, level: 0 }];
     const visited = new Set([root.id]);
+    const children = new Map();
     for (let i = 0; i < queue.length; i += 1) {
       const { id, level } = queue[i];
       if (!levels.has(level)) levels.set(level, []);
       levels.get(level).push(id);
-      for (const neighbor of adjacent.get(id) || []) {
+      children.set(id, []);
+      for (const neighbor of [...(adjacent.get(id) || [])].sort(compare)) {
         if (visited.has(neighbor) || positions.has(neighbor)) continue;
         visited.add(neighbor);
+        children.get(id).push(neighbor);
         queue.push({ id: neighbor, level: level + 1 });
       }
     }
-    const width =
-      Math.max(...[...levels.values()].map((row) => row.length)) * 310;
-    for (const [level, row] of levels) {
-      row.forEach((id, index) =>
-        positions.set(id, {
-          x: offset + (width - row.length * 310) / 2 + index * 310,
-          y: level * 225,
-        }),
-      );
+    const widths = new Map();
+    for (const { id } of [...queue].reverse()) {
+      const branch = children.get(id);
+      widths.set(id, Math.max(nodeSize(byId.get(id)).width,
+        branch.reduce((sum, child) => sum + widths.get(child), 0) + Math.max(0, branch.length - 1) * 110));
     }
-    offset += width + 100;
+    const tops = [0];
+    for (const [level, row] of levels) {
+      tops[level + 1] = tops[level] + Math.max(...row.map((id) => nodeSize(byId.get(id)).height)) + 160;
+    }
+    const lefts = new Map([[root.id, offset]]);
+    for (const { id, level } of queue) {
+      const width = widths.get(id), left = lefts.get(id);
+      positions.set(id, { x: left + (width - nodeSize(byId.get(id)).width) / 2, y: tops[level] });
+      const branch = children.get(id);
+      const total = branch.reduce((sum, child) => sum + widths.get(child), 0) + Math.max(0, branch.length - 1) * 110;
+      let childLeft = left + (width - total) / 2;
+      for (const child of branch) {
+        lefts.set(child, childLeft);
+        childLeft += widths.get(child) + 110;
+      }
+    }
+    offset += widths.get(root.id) + 200;
   }
   return nodes.map((node) => ({ ...node, position: positions.get(node.id) }));
+}
+
+export function alignEdgeHandles(nodes, edges) {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  return edges.map((edge) => {
+    const source = byId.get(edge.source), target = byId.get(edge.target);
+    if (!source || !target) return edge;
+    const a = nodeSize(source), b = nodeSize(target);
+    const dx = target.position.x + b.width / 2 - source.position.x - a.width / 2;
+    const dy = target.position.y + b.height / 2 - source.position.y - a.height / 2;
+    const horizontal = Math.abs(dy) < (a.height + b.height) / 2;
+    return { ...edge,
+      sourceHandle: horizontal ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'bottom' : 'top'),
+      targetHandle: horizontal ? (dx >= 0 ? 'left' : 'right') : (dy >= 0 ? 'top' : 'bottom'),
+    };
+  });
 }

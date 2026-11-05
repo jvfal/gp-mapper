@@ -39,6 +39,7 @@ import { useMapFullscreen } from "./useMapFullscreen";
 import { AuditContext, CatalogContext, EdgeContext, MapNode, TimedEdge } from "./MapElements";
 import { CatalogDrawer, MapInspector } from "./MapDrawer";
 import {
+  alignEdgeHandles,
   connectionExists,
   makeNode,
   nodeId,
@@ -86,6 +87,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
   const [now, setNow] = useState(Date.now());
   const [isCapturing, setIsCapturing] = useState(false);
   const captureBusy = useRef(false);
+  const reconnectingEdge = useRef(null);
   const flow = useReactFlow();
   const zoom = useStore((state) => state.transform[2]);
   const canvasRef = useRef(null);
@@ -132,7 +134,8 @@ function App({ board, user, onBack, onReload, iconUrl }) {
           if (
             old &&
             old.position.x === node.position.x &&
-            old.position.y === node.position.y
+            old.position.y === node.position.y &&
+            !!old.data.isHome === !!node.data.isHome
           )
             return old;
           return { ...old, ...node };
@@ -726,7 +729,9 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                     className="tool-button"
                     disabled={!canEdit || !nodes.length}
                     onClick={() => {
-                      setNodes((current) => organizeNodes(current, edges));
+                      const organized = organizeNodes(flow.getNodes(), edges);
+                      setNodes(organized);
+                      setEdges((current) => alignEdgeHandles(organized, current));
                       fit();
                     }}
                     title={t("board.organizeTitle")}
@@ -832,7 +837,8 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                     "minimap.ariaLabel": t("a11y.minimap"),
                   }}
                   nodes={nodes}
-                  edges={edges}
+                  edges={edges.map((edge) => ({ ...edge, zIndex: 1,
+                    className: `source-${edge.sourceHandle} target-${edge.targetHandle}` }))}
                   nodeTypes={nodeTypes}
                   edgeTypes={edgeTypes}
                   onNodesChange={onNodesChange}
@@ -853,6 +859,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                   }}
                   connectionRadius={32 / zoom}
                   onConnectEnd={(_, connection) => {
+                    if (reconnectingEdge.current) return;
                     if (connection.isValid || !connection.fromNode) return;
                     const source = connection.fromNode.id;
                     const target = connection.toNode?.id;
@@ -873,8 +880,21 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                       edges,
                       connection.source,
                       connection.target,
+                      reconnectingEdge.current,
                     )
                   }
+                  onReconnectStart={(_, edge) => {
+                    reconnectingEdge.current = edge.id;
+                    setPendingConnection(null);
+                  }}
+                  onReconnect={canEdit ? (oldEdge, connection) => {
+                    setEdges((current) => {
+                      if (connection.source === connection.target || connectionExists(current, connection.source, connection.target, oldEdge.id)) return current;
+                      return current.map((edge) => edge.id === oldEdge.id ? { ...edge, ...connection } : edge);
+                    });
+                  } : undefined}
+                  onReconnectEnd={() => { reconnectingEdge.current = null; }}
+                  reconnectRadius={12}
                   onNodeClick={(_, node) => {
                     setInspectedId(node.data.mapId);
                     setDrawer("detail");
@@ -906,7 +926,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                   connectionMode={ConnectionMode.Loose}
                   nodesDraggable={canEdit}
                   nodesConnectable={canEdit}
-                  edgesReconnectable={false}
+                  edgesReconnectable={canEdit}
                   deleteKeyCode={canEdit ? ["Backspace", "Delete"] : null}
                   colorMode="dark"
                   snapToGrid
@@ -982,7 +1002,14 @@ function App({ board, user, onBack, onReload, iconUrl }) {
                   />
                 )}
                 {drawer === "detail" && inspected && (
-                  <MapInspector map={inspected} close={() => setDrawer(null)} />
+                  <MapInspector map={inspected} close={() => setDrawer(null)}
+                    isHome={!!nodes.find((node) => node.data.mapId === inspected.id)?.data.isHome}
+                    canEdit={canEdit}
+                    onToggleHome={() => {
+                      if (!canEdit || !inspected.is_hideout) return;
+                      setNodes((current) => current.map((node) => node.data.mapId === inspected.id
+                        ? { ...node, data: { ...node.data, isHome: !node.data.isHome } } : node));
+                    }} />
                 )}
               </div>
               <div className="canvas-footer">

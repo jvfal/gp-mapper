@@ -20,8 +20,8 @@ class MapDungeonInline(admin.TabularInline):
 
 @admin.register(RoadMap)
 class RoadMapAdmin(admin.ModelAdmin):
-    list_display = ['name', 'tier', 'is_active']
-    list_filter = ['tier', 'is_active']
+    list_display = ['name', 'zone_type', 'tier', 'is_hideout', 'is_active']
+    list_filter = ['zone_type', 'tier', 'is_hideout', 'is_active']
     search_fields = ['name']
     exclude = ['image']
     inlines = [MapResourceInline, MapChestInline, MapDungeonInline]

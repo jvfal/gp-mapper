@@ -5,6 +5,11 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 
 
+class MemberActivity(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mapper_activity')
+    last_access_at = models.DateTimeField()
+
+
 class DiscordAccount(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='discord_account')
     discord_id = models.CharField(max_length=20, unique=True)
@@ -156,6 +161,7 @@ class BoardNode(GraphAttribution):
     road_map = models.ForeignKey('catalog.RoadMap', on_delete=models.PROTECT)
     x = models.FloatField(default=0)
     y = models.FloatField(default=0)
+    is_home = models.BooleanField(default=False)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['board', 'road_map'], name='mapper_node_unique_map')]

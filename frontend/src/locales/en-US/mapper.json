@@ -1,4 +1,29 @@
 {
+  "home": { "label": "Our home", "mark": "Mark as home", "remove": "Unmark as home" },
+  "zones": {
+    "labels": {
+      "road": "Avalon Roads",
+      "starter": "Starter cities",
+      "city": "Cities and portals",
+      "blue": "Blue zone",
+      "yellow": "Yellow zone",
+      "red": "Red zone",
+      "black": "Black Zone"
+    },
+    "short": {
+      "road": "Road",
+      "starter": "Starter",
+      "city": "City",
+      "blue": "Blue",
+      "yellow": "Yellow",
+      "red": "Red",
+      "black": "Black"
+    },
+    "filter": "Map type",
+    "all": "All map types",
+    "detailsUnavailable": "Resource details are only available for Avalon Roads maps.",
+    "hideout": "HO zone — hideouts allowed"
+  },
   "page": {
     "title": "{{guild}} · Mapper",
     "description": "Plan your routes through the Avalon Roads with an interactive map.",
@@ -304,9 +329,9 @@
     "deleteMaps": "Can delete guild maps",
     "localAccount": "Local account",
     "joinedAt": "Registered on",
-    "lastLogin": "Last sign-in",
+    "lastAccess": "Last access",
     "unknownDate": "Not available",
-    "neverLoggedIn": "Never signed in",
+    "accessNotRecorded": "No access recorded",
     "wrongGuild": "This account is linked to another Discord server. Check the guild configuration and ask the person to sign in again.",
     "guildNotConfigured": "Configure the Discord server ID before approving members.",
     "title": "Members",

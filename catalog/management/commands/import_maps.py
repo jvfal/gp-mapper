@@ -26,7 +26,7 @@ def validate_catalog(payload):
         for field in ('id', 'name', 'tier', 'image', 'resources', 'chests', 'dungeons'):
             if field not in row:
                 raise CommandError(f'Campo ausente: {field}.')
-        if type(row['id']) is not int or type(row['tier']) is not int:
+        if type(row['id']) is not int or row['tier'] is not None and type(row['tier']) is not int:
             raise CommandError('ID e tier devem ser inteiros.')
         if not isinstance(row['name'], str) or not isinstance(row['image'], str):
             raise CommandError('Nome e imagem devem ser strings.')
@@ -34,7 +34,13 @@ def validate_catalog(payload):
             raise CommandError(f'Mapa duplicado: {row["name"]}.')
         seen_ids.add(row['id'])
         seen_names.add(row['name'])
-        roadmap = RoadMap(**{field: row[field] for field in ('id', 'name', 'tier', 'image')})
+        if type(row.get('features_known', True)) is not bool:
+            raise CommandError('features_known deve ser booleano.')
+        if type(row.get('is_hideout', False)) is not bool:
+            raise CommandError('is_hideout deve ser booleano.')
+        roadmap = RoadMap(**{field: row[field] for field in ('id', 'name', 'tier', 'image')},
+                          zone_type=row.get('zone_type', 'road'), features_known=row.get('features_known', True),
+                          is_hideout=row.get('is_hideout', False), biome=row.get('biome', ''))
         try:
             roadmap.full_clean(validate_unique=False, validate_constraints=False)
             for collection, model, type_field in FEATURES:
@@ -91,6 +97,10 @@ class Command(BaseCommand):
                         pk=row['id'], defaults={
                             **{field: row[field] for field in ('name', 'tier', 'image')},
                             'is_active': True,
+                            'zone_type': row.get('zone_type', 'road'),
+                            'features_known': row.get('features_known', True),
+                            'is_hideout': row.get('is_hideout', False),
+                            'biome': row.get('biome', ''),
                         },
                     )
                     created += is_new

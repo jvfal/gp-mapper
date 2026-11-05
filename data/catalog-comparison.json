@@ -1,6 +1,17 @@
 {
-  "map_count": 400,
-  "preserved_ids": 400,
+  "map_count": 814,
+  "roads": 400,
+  "mainland_zones": 414,
+  "zone_types": {
+    "road": 400,
+    "yellow": 42,
+    "red": 30,
+    "city": 14,
+    "black": 276,
+    "blue": 47,
+    "starter": 5
+  },
+  "preserved_ids": 814,
   "new_maps": 0,
   "existing_maps_absent_from_tracker": [],
   "maps_absent_from_sugarfox": [],

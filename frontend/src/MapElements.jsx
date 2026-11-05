@@ -9,6 +9,7 @@ import {
 } from "@xyflow/react";
 import { Icon } from "./icons";
 import { featureRows, HANDLE_SIZE, remainingTime } from "./graph";
+import { ZoneBadge, HideoutBadge, regionStyle } from './ZoneBadge';
 export const CatalogContext = createContext(new Map());
 export const AuditContext = createContext({ nodes: new Map(), edges: new Map() });
 export const EdgeContext = createContext({
@@ -70,9 +71,10 @@ export const MapNode = memo(function MapNode({ data, selected }) {
   const rows = featureRows([...map.resources, ...map.chests, ...map.dungeons]);
   return (
     <article
-      className={`road-card ${selected ? "is-selected" : ""}`}
+      className={`road-card zone-${map.zone_type || 'road'} ${data.isHome ? 'is-home' : ''} ${selected ? "is-selected" : ""}`}
       style={{
         "--handle-size": `${HANDLE_SIZE}px`,
+        ...regionStyle(map),
       }}
     >
       <Handle
@@ -84,10 +86,12 @@ export const MapNode = memo(function MapNode({ data, selected }) {
         })}
       />
       <div className="road-card-heading">
-        <span className={`tier-badge t${map.tier}`}>T{map.tier}</span>
+        <ZoneBadge map={map} />
+        <HideoutBadge map={map} />
         <h3>{map.name}</h3>
+        {data.isHome && <span className="home-marker" title={t('home.label')} aria-label={t('home.label')}><Icon name="home" size={17} /></span>}
       </div>
-      <div className="road-card-features">
+      {rows.length > 0 && <div className="road-card-features">
         {rows.map((row, index) => (
           <div
             className="feature-row"
@@ -104,8 +108,7 @@ export const MapNode = memo(function MapNode({ data, selected }) {
             ))}
           </div>
         ))}
-        {!rows.length && <span className="muted">{t("features.empty")}</span>}
-      </div>
+      </div>}
       <AuditStamp audit={audits.nodes.get(data.mapId)} className="road-card-audit" />
       <Handle
         type="source"

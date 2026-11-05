@@ -57,11 +57,17 @@ def apply_operations(current, operations):
         if not isinstance(operation, dict):
             raise ValueError('invalid_operations')
         kind = operation.get('type')
-        if kind in ('node.add', 'node.move', 'node.remove'):
+        if kind in ('node.add', 'node.move', 'node.remove', 'node.home'):
             map_id = operation.get('mapId')
             if type(map_id) is not int or not 0 < map_id <= 2_147_483_647:
                 raise ValueError('invalid_operations')
             node_id = f'map-{map_id}'
+            if kind == 'node.home':
+                if type(operation.get('isHome')) is not bool:
+                    raise ValueError('invalid_operations')
+                if node_id in nodes:
+                    nodes[node_id]['isHome'] = operation['isHome']
+                continue
             if kind == 'node.remove':
                 nodes.pop(node_id, None)
                 edges = {key: edge for key, edge in edges.items() if node_id not in (edge['source'], edge['target'])}

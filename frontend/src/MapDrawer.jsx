@@ -4,13 +4,18 @@ import { FeatureChip } from "./MapElements";
 import { Icon } from "./icons";
 import { matchesMapName } from "./graph";
 import { guildName } from "./Brand";
+import { ZoneBadge, HideoutBadge } from './ZoneBadge';
 export function CatalogDrawer({ catalog, nodes, addMap, close }) {
   const { t } = useTranslation("mapper");
   const [query, setQuery] = useState("");
   const [tier, setTier] = useState(null);
+  const [zoneType, setZoneType] = useState('all');
   const ids = new Set(nodes.map((node) => node.data.mapId));
+  const availableTiers = [...new Set(catalog
+    .filter((map) => map.is_active !== false && (zoneType === 'all' || (map.zone_type || 'road') === zoneType))
+    .map((map) => map.tier).filter(Boolean))].sort((a, b) => a - b);
   const maps = catalog.filter(
-    (map) => map.is_active !== false && (!tier || map.tier === tier) && matchesMapName(map.name, query),
+    (map) => map.is_active !== false && (zoneType === 'all' || (map.zone_type || 'road') === zoneType) && (!tier || map.tier === tier) && matchesMapName(map.name, query),
   );
   return (
     <aside className="map-drawer" aria-label={t("catalog.title")}>
@@ -37,8 +42,12 @@ export function CatalogDrawer({ catalog, nodes, addMap, close }) {
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
+      <select className="catalog-zone-filter" aria-label={t('zones.filter')} value={zoneType} onChange={(event) => { setZoneType(event.target.value); setTier(null); }}>
+        <option value="all">{t('zones.all')}</option>
+        {['road', 'black', 'blue', 'yellow', 'red', 'city', 'starter'].map((kind) => <option key={kind} value={kind}>{t(`zones.labels.${kind}`)}</option>)}
+      </select>
       <div className="tier-filters" aria-label={t("catalog.filterTier")}>
-        {[null, 4, 6, 8].map((value) => (
+        {[null, ...availableTiers].map((value) => (
           <button
             key={value || "all"}
             className={tier === value ? "active" : ""}
@@ -59,17 +68,17 @@ export function CatalogDrawer({ catalog, nodes, addMap, close }) {
       <div className="catalog-list">
         {maps.map((map) => (
           <button
-            className="catalog-item"
+            className={`catalog-item zone-${map.zone_type || 'road'}`}
             key={map.id}
             onClick={() => addMap(map)}
             aria-label={`${ids.has(map.id) ? t("common:actions.locate") : t("common:actions.add")} ${map.name}`}
           >
-            <span className={`tier-badge t${map.tier}`}>T{map.tier}</span>
+            <ZoneBadge map={map} />
+            <HideoutBadge map={map} />
             <span className="catalog-map-name">
               {map.name}
               <small>
-                {t("catalog.resources", { count: map.resources.length })} ·{" "}
-                {t("catalog.chests", { count: map.chests.length })}
+                {map.features_known === false ? t(`zones.labels.${map.zone_type || 'road'}`) : <>{t("catalog.resources", { count: map.resources.length })} · {t("catalog.chests", { count: map.chests.length })}</>}
               </small>
             </span>
             <span
@@ -84,7 +93,7 @@ export function CatalogDrawer({ catalog, nodes, addMap, close }) {
     </aside>
   );
 }
-export function MapInspector({ map, close }) {
+export function MapInspector({ map, close, isHome, canEdit, onToggleHome }) {
   const { t } = useTranslation("mapper");
   return (
     <aside
@@ -96,7 +105,7 @@ export function MapInspector({ map, close }) {
       <div className="drawer-heading">
         <div>
           <span className="eyebrow">{t("details.caption")}</span>
-          <h2>{map.name}</h2>
+          <h2>{map.name} <HideoutBadge map={map} /></h2>
         </div>
         <button
           className="icon-button"
@@ -107,14 +116,19 @@ export function MapInspector({ map, close }) {
         </button>
       </div>
       <div className="inspector-content">
+        {map.is_hideout && (canEdit ? <button className={`button home-toggle ${isHome ? 'is-home' : ''}`}
+          type="button" aria-pressed={isHome} onClick={onToggleHome}>
+          <Icon name="home" size={17} />{t(isHome ? 'home.remove' : 'home.mark')}
+        </button> : isHome && <p className="home-status"><Icon name="home" size={17} />{t('home.label')}</p>)}
         {map.image_url && (
           <img className="map-image" src={map.image_url} alt={t("details.image", { name: map.name })} />
         )}
         <div className="map-summary">
-          <span className={`tier-badge t${map.tier}`}>T{map.tier}</span>
-          <span>Avalon Road</span>
+          <ZoneBadge map={map} />
+          <span>{t(`zones.labels.${map.zone_type || 'road'}`)}</span>
         </div>
-        {[
+        {map.features_known === false && <p className="muted">{t('zones.detailsUnavailable')}</p>}
+        {map.features_known !== false && [
           [t("details.resources"), map.resources],
           [t("details.chests"), map.chests],
           [t("details.dungeons"), map.dungeons],

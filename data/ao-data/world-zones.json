@@ -1,0 +1,2490 @@
+{
+  "source": "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/0483dd97f1581dfaf02eed42f25f5ea2a3cb75e5/cluster/world.xml",
+  "revision": "0483dd97f1581dfaf02eed42f25f5ea2a3cb75e5",
+  "zones": [
+    {
+      "name": "Adrens Hill",
+      "cluster_id": "3220",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Anklesnag Mire",
+      "cluster_id": "0222",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Arthur's Rest",
+      "cluster_id": "4300",
+      "tier": 1,
+      "biome": "mountain"
+    },
+    {
+      "name": "Aspenwood",
+      "cluster_id": "1220",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Astolat",
+      "cluster_id": "2009",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Avalanche Incline",
+      "cluster_id": "4358",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Avalanche Ravine",
+      "cluster_id": "4314",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Battlebrae Flatland",
+      "cluster_id": "3316",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Battlebrae Grassland",
+      "cluster_id": "3348",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Battlebrae Lake",
+      "cluster_id": "3313",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Battlebrae Meadow",
+      "cluster_id": "3349",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Battlebrae Peaks",
+      "cluster_id": "3317",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Battlebrae Plain",
+      "cluster_id": "3312",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Bellever Tor",
+      "cluster_id": "3249",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Birchcopse",
+      "cluster_id": "1207",
+      "tier": 4,
+      "biome": "forest"
+    },
+    {
+      "name": "Birken Fell",
+      "cluster_id": "3201",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Black Monastery",
+      "cluster_id": "0356",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Blackthorn Quarry",
+      "cluster_id": "3207",
+      "tier": 4,
+      "biome": "highland"
+    },
+    {
+      "name": "Bleachskull Desert",
+      "cluster_id": "2333",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Bleachskull Steppe",
+      "cluster_id": "2314",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Bonepool Marsh",
+      "cluster_id": "0212",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Bowscale Fell",
+      "cluster_id": "3208",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Braemore Lowland",
+      "cluster_id": "3331",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Braemore Upland",
+      "cluster_id": "3309",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Brambleshore Hinterlands",
+      "cluster_id": "1305",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Brent Knoll",
+      "cluster_id": "3209",
+      "tier": 3,
+      "biome": "highland"
+    },
+    {
+      "name": "Bridgewatch",
+      "cluster_id": "2000",
+      "tier": 1,
+      "biome": "steppe"
+    },
+    {
+      "name": "Bridgewatch Portal",
+      "cluster_id": "2301",
+      "tier": 1,
+      "biome": "steppe"
+    },
+    {
+      "name": "Broken Fell",
+      "cluster_id": "3222",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Brons Hill",
+      "cluster_id": "3218",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Bryn Gorge",
+      "cluster_id": "4202",
+      "tier": 3,
+      "biome": "mountain"
+    },
+    {
+      "name": "Caerleon",
+      "cluster_id": "3003",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Cairn Camain",
+      "cluster_id": "4213",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Cloch",
+      "cluster_id": "4220",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Darg",
+      "cluster_id": "4209",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Drain",
+      "cluster_id": "4218",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Fidair",
+      "cluster_id": "4214",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Glascore",
+      "cluster_id": "4212",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cairn Gorm",
+      "cluster_id": "4205",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Camlann",
+      "cluster_id": "0005",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Carns Hill",
+      "cluster_id": "3217",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Caulder Fissure",
+      "cluster_id": "4219",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Cedarcopse",
+      "cluster_id": "1246",
+      "tier": 4,
+      "biome": "forest"
+    },
+    {
+      "name": "Chillhag",
+      "cluster_id": "0202",
+      "tier": 3,
+      "biome": "swamp"
+    },
+    {
+      "name": "Citadel of Ash",
+      "cluster_id": "2355",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Cracked Earth",
+      "cluster_id": "2202",
+      "tier": 3,
+      "biome": "steppe"
+    },
+    {
+      "name": "Creag Dhor",
+      "cluster_id": "4221",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Creag Garr",
+      "cluster_id": "4211",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Creag Meagir",
+      "cluster_id": "4222",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Creag Morr",
+      "cluster_id": "4216",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Croker Hill",
+      "cluster_id": "3212",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Crose Gorge",
+      "cluster_id": "4203",
+      "tier": 3,
+      "biome": "mountain"
+    },
+    {
+      "name": "Curlew Fen",
+      "cluster_id": "0213",
+      "tier": 4,
+      "biome": "swamp"
+    },
+    {
+      "name": "Daemonium Keep",
+      "cluster_id": "2360",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Darkbough Snag",
+      "cluster_id": "1358",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Darkground Swamp",
+      "cluster_id": "0221",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Deadpine Forest",
+      "cluster_id": "1312",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Deadvein Gully",
+      "cluster_id": "2204",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Deathreach Priory",
+      "cluster_id": "0359",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Deathwisp Bog",
+      "cluster_id": "0347",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Deathwisp Sink",
+      "cluster_id": "0346",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Deeproot Wood",
+      "cluster_id": "1218",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Deepwood Copse",
+      "cluster_id": "1343",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Deepwood Dell",
+      "cluster_id": "1306",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Deepwood Gorge",
+      "cluster_id": "1327",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Deepwood Pines",
+      "cluster_id": "1340",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Dewleaf Fen",
+      "cluster_id": "0209",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Domhain Chasm",
+      "cluster_id": "4223",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Driftwood Glen",
+      "cluster_id": "1334",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Driftwood Hollow",
+      "cluster_id": "1348",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Driftwood Vale",
+      "cluster_id": "1321",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Drownfield Course",
+      "cluster_id": "0308",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Fen",
+      "cluster_id": "0313",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Mire",
+      "cluster_id": "0310",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Quag",
+      "cluster_id": "0340",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Rut",
+      "cluster_id": "0332",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Sink",
+      "cluster_id": "0355",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Slough",
+      "cluster_id": "0329",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownfield Wetland",
+      "cluster_id": "0328",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drownhorse Basin",
+      "cluster_id": "0217",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Drybasin Oasis",
+      "cluster_id": "2341",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Drybasin Riverbed",
+      "cluster_id": "2308",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryfield Meadow",
+      "cluster_id": "2216",
+      "tier": 4,
+      "biome": "steppe"
+    },
+    {
+      "name": "Drytop Pillars",
+      "cluster_id": "2328",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Drytop Riverbed",
+      "cluster_id": "2327",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Confluence",
+      "cluster_id": "2347",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Cross",
+      "cluster_id": "2315",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein End",
+      "cluster_id": "2345",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Oasis",
+      "cluster_id": "2334",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Plain",
+      "cluster_id": "2319",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Riverbed",
+      "cluster_id": "2313",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dryvein Steppe",
+      "cluster_id": "2332",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Drywater Meadow",
+      "cluster_id": "2207",
+      "tier": 4,
+      "biome": "steppe"
+    },
+    {
+      "name": "Dusklight Fen",
+      "cluster_id": "0206",
+      "tier": 4,
+      "biome": "swamp"
+    },
+    {
+      "name": "Dusktree Swamp",
+      "cluster_id": "0223",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Eldersleep",
+      "cluster_id": "1357",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Eldon Hill",
+      "cluster_id": "3204",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Everwinter Crossing",
+      "cluster_id": "4307",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Expanse",
+      "cluster_id": "4340",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Gap",
+      "cluster_id": "4341",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Gorge",
+      "cluster_id": "4325",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Incline",
+      "cluster_id": "4353",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Passage",
+      "cluster_id": "4337",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Peak",
+      "cluster_id": "4322",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Plain",
+      "cluster_id": "4323",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Reach",
+      "cluster_id": "4321",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Everwinter Shores",
+      "cluster_id": "4310",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Eye of the Forest",
+      "cluster_id": "1356",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Falsestep Marsh",
+      "cluster_id": "0220",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Farshore Bay",
+      "cluster_id": "2325",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Farshore Cape",
+      "cluster_id": "2353",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Farshore Drylands",
+      "cluster_id": "2351",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Farshore Esker",
+      "cluster_id": "2320",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Farshore Heath",
+      "cluster_id": "2336",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Farshore Lagoon",
+      "cluster_id": "2338",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Felniks Hill",
+      "cluster_id": "3219",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Ferndell",
+      "cluster_id": "1215",
+      "tier": 4,
+      "biome": "forest"
+    },
+    {
+      "name": "Firesink Caldera",
+      "cluster_id": "4333",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Firesink Trench",
+      "cluster_id": "4349",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Flammog Desolation",
+      "cluster_id": "4354",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Flammog Fork",
+      "cluster_id": "4319",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Flammog Valley",
+      "cluster_id": "4330",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Flatriver Trough",
+      "cluster_id": "2219",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Flatrock Cliffs",
+      "cluster_id": "3305",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Flatrock Plateau",
+      "cluster_id": "3328",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Flimmerair Steppe",
+      "cluster_id": "2221",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Floatshoal Bight",
+      "cluster_id": "4339",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Floatshoal Fissure",
+      "cluster_id": "4327",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Floatshoal Floe",
+      "cluster_id": "4313",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Flynsdell",
+      "cluster_id": "1216",
+      "tier": 4,
+      "biome": "forest"
+    },
+    {
+      "name": "Fog Fen",
+      "cluster_id": "0216",
+      "tier": 4,
+      "biome": "swamp"
+    },
+    {
+      "name": "Forest Cross",
+      "cluster_id": "1006",
+      "tier": 2,
+      "biome": "forest"
+    },
+    {
+      "name": "Fort Sterling",
+      "cluster_id": "4000",
+      "tier": 1,
+      "biome": "mountain"
+    },
+    {
+      "name": "Fort Sterling Portal",
+      "cluster_id": "4301",
+      "tier": 1,
+      "biome": "mountain"
+    },
+    {
+      "name": "Fractured Ground",
+      "cluster_id": "2214",
+      "tier": 3,
+      "biome": "steppe"
+    },
+    {
+      "name": "Frostbite Chasm",
+      "cluster_id": "4316",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostbite Mountain",
+      "cluster_id": "4335",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostpeak Ascent",
+      "cluster_id": "4324",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostpeak Vista",
+      "cluster_id": "4306",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostseep Crevasse",
+      "cluster_id": "4347",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostseep Ravine",
+      "cluster_id": "4320",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostspring Passage",
+      "cluster_id": "4336",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Frostspring Volcano",
+      "cluster_id": "4351",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Garrow Fell",
+      "cluster_id": "3221",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Giantweald Copse",
+      "cluster_id": "1310",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Giantweald Dale",
+      "cluster_id": "1308",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Giantweald Edge",
+      "cluster_id": "1341",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Giantweald Glade",
+      "cluster_id": "1344",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Giantweald Roots",
+      "cluster_id": "1331",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Giantweald Woods",
+      "cluster_id": "1328",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Glacierbreak Summit",
+      "cluster_id": "4332",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Canyon",
+      "cluster_id": "4329",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Cross",
+      "cluster_id": "4343",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Fissure",
+      "cluster_id": "4356",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Pass",
+      "cluster_id": "4355",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Passage",
+      "cluster_id": "4312",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Glacierfall Valley",
+      "cluster_id": "4344",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Goffers Knoll",
+      "cluster_id": "3215",
+      "tier": 3,
+      "biome": "highland"
+    },
+    {
+      "name": "Goldshimmer Plain",
+      "cluster_id": "2222",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Gravemound Brim",
+      "cluster_id": "3323",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Gravemound Cliffs",
+      "cluster_id": "3352",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Gravemound Hills",
+      "cluster_id": "3324",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Gravemound Knoll",
+      "cluster_id": "3351",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Gravemound Slope",
+      "cluster_id": "3337",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Greenhollow Copse",
+      "cluster_id": "1352",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Greenhollow Vale",
+      "cluster_id": "1324",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Greenshore Bay",
+      "cluster_id": "1355",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Greenshore Peninsula",
+      "cluster_id": "1307",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Gutras Hill",
+      "cluster_id": "3205",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Gwan Gorge",
+      "cluster_id": "4210",
+      "tier": 3,
+      "biome": "mountain"
+    },
+    {
+      "name": "Haldon Tor",
+      "cluster_id": "3214",
+      "tier": 4,
+      "biome": "highland"
+    },
+    {
+      "name": "Haytor",
+      "cluster_id": "3206",
+      "tier": 4,
+      "biome": "highland"
+    },
+    {
+      "name": "Highbole Glen",
+      "cluster_id": "1205",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Highland Cross",
+      "cluster_id": "3002",
+      "tier": 2,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Grassland",
+      "cluster_id": "3319",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Loch",
+      "cluster_id": "3357",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Meadow",
+      "cluster_id": "3311",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Mound",
+      "cluster_id": "3346",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Plains",
+      "cluster_id": "3315",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Highstone Plateau",
+      "cluster_id": "3347",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Hightree Borderlands",
+      "cluster_id": "1333",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Cliffs",
+      "cluster_id": "1336",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Dale",
+      "cluster_id": "1317",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Enclave",
+      "cluster_id": "1322",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Glade",
+      "cluster_id": "1320",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Hillock",
+      "cluster_id": "1347",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Isle",
+      "cluster_id": "1345",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Lake",
+      "cluster_id": "1316",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Levee",
+      "cluster_id": "1335",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Pass",
+      "cluster_id": "1332",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Steep",
+      "cluster_id": "1313",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hightree Strand",
+      "cluster_id": "1319",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Hornbeam Wood",
+      "cluster_id": "1214",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Iceburn Cliffs",
+      "cluster_id": "4342",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Iceburn Firth",
+      "cluster_id": "4318",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Iceburn Peaks",
+      "cluster_id": "4328",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Iceburn Tundra",
+      "cluster_id": "4346",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Inis Mon",
+      "cluster_id": "1007",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Kilmar Tor",
+      "cluster_id": "3216",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Kindlegrass Steppe",
+      "cluster_id": "2201",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Larchroad",
+      "cluster_id": "1201",
+      "tier": 3,
+      "biome": "forest"
+    },
+    {
+      "name": "Lazygrass Plain",
+      "cluster_id": "2209",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Lewsdon Hill",
+      "cluster_id": "3203",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Longfen Arms",
+      "cluster_id": "0336",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Longfen Marsh",
+      "cluster_id": "0322",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Longfen Veins",
+      "cluster_id": "0352",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Longmarch Meadow",
+      "cluster_id": "2212",
+      "tier": 4,
+      "biome": "steppe"
+    },
+    {
+      "name": "Longshadow Plain",
+      "cluster_id": "2218",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Longtimber Glen",
+      "cluster_id": "1209",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Lymhurst",
+      "cluster_id": "1000",
+      "tier": 1,
+      "biome": "forest"
+    },
+    {
+      "name": "Lymhurst Portal",
+      "cluster_id": "1301",
+      "tier": 1,
+      "biome": "forest"
+    },
+    {
+      "name": "Malag Crevasse",
+      "cluster_id": "4215",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Mardale",
+      "cluster_id": "3202",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Martlock",
+      "cluster_id": "3004",
+      "tier": 1,
+      "biome": "highland"
+    },
+    {
+      "name": "Martlock Portal",
+      "cluster_id": "3301",
+      "tier": 1,
+      "biome": "highland"
+    },
+    {
+      "name": "Mase Knoll",
+      "cluster_id": "3210",
+      "tier": 3,
+      "biome": "highland"
+    },
+    {
+      "name": "Mawar Gorge",
+      "cluster_id": "4208",
+      "tier": 4,
+      "biome": "mountain"
+    },
+    {
+      "name": "Meltwater Bog",
+      "cluster_id": "0307",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Meltwater Channel",
+      "cluster_id": "0354",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Meltwater Delta",
+      "cluster_id": "0325",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Meltwater Sump",
+      "cluster_id": "0338",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Merlyn's Rest",
+      "cluster_id": "1012",
+      "tier": 1,
+      "biome": "forest"
+    },
+    {
+      "name": "Morgana's Rest",
+      "cluster_id": "0008",
+      "tier": 1,
+      "biome": "swamp"
+    },
+    {
+      "name": "Mountain Cross",
+      "cluster_id": "4006",
+      "tier": 2,
+      "biome": "mountain"
+    },
+    {
+      "name": "Mudfoot Mounds",
+      "cluster_id": "0337",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Mudfoot Sump",
+      "cluster_id": "0323",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Munten Fell",
+      "cluster_id": "4345",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Munten Rise",
+      "cluster_id": "4315",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Munten Tundra",
+      "cluster_id": "4331",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Murdergulch Cross",
+      "cluster_id": "3306",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Murdergulch Divide",
+      "cluster_id": "3354",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Murdergulch Gap",
+      "cluster_id": "3307",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Murdergulch Ravine",
+      "cluster_id": "3355",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Murdergulch Trail",
+      "cluster_id": "3342",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Murkweald",
+      "cluster_id": "1210",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Murky Fen",
+      "cluster_id": "0215",
+      "tier": 4,
+      "biome": "swamp"
+    },
+    {
+      "name": "Nightbloom Forest",
+      "cluster_id": "1223",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Nightcreak Marsh",
+      "cluster_id": "0207",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Northstrand Beach",
+      "cluster_id": "2326",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Northstrand Dunes",
+      "cluster_id": "2305",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Oakcopse",
+      "cluster_id": "1204",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Owlsong Glen",
+      "cluster_id": "1222",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Parchsand Cliffs",
+      "cluster_id": "2331",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Parchsand Drought",
+      "cluster_id": "2359",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Parchthroat Plain",
+      "cluster_id": "2206",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Pen Fenair",
+      "cluster_id": "4217",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Pen Garn",
+      "cluster_id": "4201",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Pen Gent",
+      "cluster_id": "4207",
+      "tier": 4,
+      "biome": "mountain"
+    },
+    {
+      "name": "Pen Kerrig",
+      "cluster_id": "4204",
+      "tier": 4,
+      "biome": "mountain"
+    },
+    {
+      "name": "Pen Uchaf",
+      "cluster_id": "4249",
+      "tier": 4,
+      "biome": "mountain"
+    },
+    {
+      "name": "Pinecopse",
+      "cluster_id": "1217",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Prospector's Hope",
+      "cluster_id": "2215",
+      "tier": 3,
+      "biome": "steppe"
+    },
+    {
+      "name": "Razorrock Bank",
+      "cluster_id": "3345",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Chasm",
+      "cluster_id": "3343",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Edge",
+      "cluster_id": "3332",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Gulch",
+      "cluster_id": "3356",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Passage",
+      "cluster_id": "3308",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Ravine",
+      "cluster_id": "3330",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Valley",
+      "cluster_id": "3310",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Razorrock Verge",
+      "cluster_id": "3344",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Redlake",
+      "cluster_id": "1208",
+      "tier": 3,
+      "biome": "forest"
+    },
+    {
+      "name": "Redstone Plain",
+      "cluster_id": "2220",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Redtree Enclave",
+      "cluster_id": "3359",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Rivercopse Crossing",
+      "cluster_id": "1318",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Rivercopse Curve",
+      "cluster_id": "1346",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Rivercopse Fount",
+      "cluster_id": "1359",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Rivercopse Path",
+      "cluster_id": "1349",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Roastcorpse Steppe",
+      "cluster_id": "2203",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Rowanwood",
+      "cluster_id": "1203",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Runnel Sink",
+      "cluster_id": "3245",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Runnelvein Bog",
+      "cluster_id": "0326",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Runnelvein Sink",
+      "cluster_id": "0341",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Runnelvein Slough",
+      "cluster_id": "0311",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Russerdell",
+      "cluster_id": "1202",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Saddle Tor",
+      "cluster_id": "3211",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Sandgust Cleft",
+      "cluster_id": "2217",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandmount Ascent",
+      "cluster_id": "2358",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandmount Desert",
+      "cluster_id": "2349",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandmount Esker",
+      "cluster_id": "2318",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandmount Strand",
+      "cluster_id": "2312",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Coast",
+      "cluster_id": "2323",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Dunes",
+      "cluster_id": "2350",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Expanse",
+      "cluster_id": "2337",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Fringe",
+      "cluster_id": "2352",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Prairie",
+      "cluster_id": "2322",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Shore",
+      "cluster_id": "2324",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sandrift Steppe",
+      "cluster_id": "2321",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Scuttlesink Marsh",
+      "cluster_id": "0353",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Scuttlesink Mouth",
+      "cluster_id": "0324",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Scuttlesink Pools",
+      "cluster_id": "0306",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Shaleheath Hills",
+      "cluster_id": "3326",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Shaleheath Steep",
+      "cluster_id": "3338",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Shiftshadow Expanse",
+      "cluster_id": "2205",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Skullmarsh Lower",
+      "cluster_id": "0315",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Skullmarsh Upper",
+      "cluster_id": "0343",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Skylake Bridge",
+      "cluster_id": "3327",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Skylake Hinterlands",
+      "cluster_id": "3339",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Skysand Plateau",
+      "cluster_id": "2307",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Skysand Ridge",
+      "cluster_id": "2340",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Slakesands Canyon",
+      "cluster_id": "2309",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Slakesands Mesa",
+      "cluster_id": "2342",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sleetwater Basin",
+      "cluster_id": "0201",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Slimehag",
+      "cluster_id": "0214",
+      "tier": 3,
+      "biome": "swamp"
+    },
+    {
+      "name": "Slithertail Marsh",
+      "cluster_id": "0218",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Slowtree Plain",
+      "cluster_id": "2208",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Smoothfloor Cleft",
+      "cluster_id": "2211",
+      "tier": 4,
+      "biome": "steppe"
+    },
+    {
+      "name": "Snapshaft Trough",
+      "cluster_id": "2210",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Southgrove Copse",
+      "cluster_id": "1337",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Southgrove Escarp",
+      "cluster_id": "1314",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Southgrove Thicket",
+      "cluster_id": "1350",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Spectral Sump",
+      "cluster_id": "0211",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Spindlewood",
+      "cluster_id": "1221",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Springsump Basin",
+      "cluster_id": "0321",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Springsump Melt",
+      "cluster_id": "0351",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Springsump Wetland",
+      "cluster_id": "0335",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Stagbourne",
+      "cluster_id": "1212",
+      "tier": 3,
+      "biome": "forest"
+    },
+    {
+      "name": "Steelhide Meadow",
+      "cluster_id": "2213",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Steppe Cross",
+      "cluster_id": "2002",
+      "tier": 2,
+      "biome": "steppe"
+    },
+    {
+      "name": "Stinkhag",
+      "cluster_id": "0205",
+      "tier": 3,
+      "biome": "swamp"
+    },
+    {
+      "name": "Stonelake Fields",
+      "cluster_id": "3325",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Stonelake Hillock",
+      "cluster_id": "3336",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Stonemouth Bay",
+      "cluster_id": "3335",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Stonemouth Northbluff",
+      "cluster_id": "3314",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Stonemouth Southbluff",
+      "cluster_id": "3358",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Stumprot Swamp",
+      "cluster_id": "0208",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Sunfang Approach",
+      "cluster_id": "2330",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunfang Cliffs",
+      "cluster_id": "2343",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunfang Dawn",
+      "cluster_id": "2357",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunfang Ravine",
+      "cluster_id": "2310",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunfang Wasteland",
+      "cluster_id": "2344",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunkenbough Spring",
+      "cluster_id": "0358",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Sunkenbough Woods",
+      "cluster_id": "0349",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Sunstrand Delta",
+      "cluster_id": "2317",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunstrand Dunes",
+      "cluster_id": "2335",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunstrand Quicksands",
+      "cluster_id": "2348",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Sunstrand Shoal",
+      "cluster_id": "2316",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Swamp Cross",
+      "cluster_id": "0004",
+      "tier": 2,
+      "biome": "swamp"
+    },
+    {
+      "name": "Swiftsands Basin",
+      "cluster_id": "2339",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Swiftsands Chaparral",
+      "cluster_id": "2354",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Swiftsands Plain",
+      "cluster_id": "2306",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Tharcal Fissure",
+      "cluster_id": "4206",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Thetford",
+      "cluster_id": "0000",
+      "tier": 1,
+      "biome": "swamp"
+    },
+    {
+      "name": "Thetford Portal",
+      "cluster_id": "0301",
+      "tier": 1,
+      "biome": "swamp"
+    },
+    {
+      "name": "Thirstwater Gully",
+      "cluster_id": "2346",
+      "tier": 7,
+      "biome": "steppe"
+    },
+    {
+      "name": "Thirstwater Steppe",
+      "cluster_id": "2311",
+      "tier": 5,
+      "biome": "steppe"
+    },
+    {
+      "name": "Thirstwater Waste",
+      "cluster_id": "2329",
+      "tier": 6,
+      "biome": "steppe"
+    },
+    {
+      "name": "Thunderrock Ascent",
+      "cluster_id": "3340",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Thunderrock Draw",
+      "cluster_id": "3353",
+      "tier": 8,
+      "biome": "highland"
+    },
+    {
+      "name": "Thunderrock Rapids",
+      "cluster_id": "3329",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Thunderrock Upland",
+      "cluster_id": "3341",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Timberscar Copse",
+      "cluster_id": "1342",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Timberscar Dell",
+      "cluster_id": "1309",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Timberslope Bridge",
+      "cluster_id": "1354",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Timberslope Dell",
+      "cluster_id": "1326",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Timberslope Grove",
+      "cluster_id": "1339",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Timbertop Dale",
+      "cluster_id": "1325",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Timbertop Escarp",
+      "cluster_id": "1353",
+      "tier": 8,
+      "biome": "forest"
+    },
+    {
+      "name": "Timbertop Wood",
+      "cluster_id": "1338",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Twinchannel Narrows",
+      "cluster_id": "0350",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Unhallowed Cloister",
+      "cluster_id": "0357",
+      "tier": 8,
+      "biome": "swamp"
+    },
+    {
+      "name": "Vixen Tor",
+      "cluster_id": "3213",
+      "tier": 4,
+      "biome": "highland"
+    },
+    {
+      "name": "Wailing Bulwark",
+      "cluster_id": "2356",
+      "tier": 8,
+      "biome": "steppe"
+    },
+    {
+      "name": "Wanderlure Basin",
+      "cluster_id": "0219",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Watchwood Bluffs",
+      "cluster_id": "1330",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Watchwood Grove",
+      "cluster_id": "1315",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Watchwood Lakeside",
+      "cluster_id": "1329",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Watchwood Precipice",
+      "cluster_id": "1311",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Westweald Shore",
+      "cluster_id": "1351",
+      "tier": 7,
+      "biome": "forest"
+    },
+    {
+      "name": "Westweald Thicket",
+      "cluster_id": "1323",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Wetgrave Bog",
+      "cluster_id": "0305",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Wetgrave Marsh",
+      "cluster_id": "0342",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Wetgrave Swale",
+      "cluster_id": "0339",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Whitebank Cross",
+      "cluster_id": "4311",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitebank Descent",
+      "cluster_id": "4305",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitebank Ridge",
+      "cluster_id": "4338",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitebank Shore",
+      "cluster_id": "4309",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitebank Stream",
+      "cluster_id": "4308",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitebank Wall",
+      "cluster_id": "4326",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitecliff Expanse",
+      "cluster_id": "4350",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitecliff Peak",
+      "cluster_id": "4334",
+      "tier": 6,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitepeak Ascent",
+      "cluster_id": "4317",
+      "tier": 5,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitepeak Spring",
+      "cluster_id": "4348",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitepeak Tundra",
+      "cluster_id": "4357",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitewall Pass",
+      "cluster_id": "4359",
+      "tier": 8,
+      "biome": "mountain"
+    },
+    {
+      "name": "Whitewall Ridge",
+      "cluster_id": "4352",
+      "tier": 7,
+      "biome": "mountain"
+    },
+    {
+      "name": "Widemoor Delta",
+      "cluster_id": "0317",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor End",
+      "cluster_id": "0330",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Estuary",
+      "cluster_id": "0316",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Fen",
+      "cluster_id": "0348",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Flats",
+      "cluster_id": "0334",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Hills",
+      "cluster_id": "0327",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Pool",
+      "cluster_id": "0312",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Shore",
+      "cluster_id": "0309",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Widemoor Woods",
+      "cluster_id": "0333",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willow Wood",
+      "cluster_id": "1206",
+      "tier": 5,
+      "biome": "forest"
+    },
+    {
+      "name": "Willowshade Hills",
+      "cluster_id": "0344",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Icemarsh",
+      "cluster_id": "0320",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Lake",
+      "cluster_id": "0319",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Mire",
+      "cluster_id": "0318",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Pools",
+      "cluster_id": "0331",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Sink",
+      "cluster_id": "0345",
+      "tier": 7,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowshade Wetlands",
+      "cluster_id": "0314",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Willowsigh Marsh",
+      "cluster_id": "0203",
+      "tier": 5,
+      "biome": "swamp"
+    },
+    {
+      "name": "Windgrass Border",
+      "cluster_id": "3318",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Coast",
+      "cluster_id": "3334",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Fields",
+      "cluster_id": "3333",
+      "tier": 6,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Gully",
+      "cluster_id": "3320",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Precipice",
+      "cluster_id": "3322",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Rill",
+      "cluster_id": "3321",
+      "tier": 5,
+      "biome": "highland"
+    },
+    {
+      "name": "Windgrass Terrace",
+      "cluster_id": "3350",
+      "tier": 7,
+      "biome": "highland"
+    },
+    {
+      "name": "Windripple Fen",
+      "cluster_id": "0204",
+      "tier": 4,
+      "biome": "swamp"
+    },
+    {
+      "name": "Wispwhisper Marsh",
+      "cluster_id": "0210",
+      "tier": 6,
+      "biome": "swamp"
+    },
+    {
+      "name": "Wyre Forest",
+      "cluster_id": "1213",
+      "tier": 6,
+      "biome": "forest"
+    },
+    {
+      "name": "Yew Wood",
+      "cluster_id": "1211",
+      "tier": 5,
+      "biome": "forest"
+    }
+  ]
+}

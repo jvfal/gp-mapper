@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { matchesMapName } from "./graph";
+import { ZoneBadge, zoneColors } from './ZoneBadge';
 export function MapSelect({ label, value, onChange, catalog, boardIds }) {
   const { t } = useTranslation("mapper");
   const [open, setOpen] = useState(false);
@@ -118,15 +119,15 @@ export function MapSelect({ label, value, onChange, catalog, boardIds }) {
               aria-selected={value === map.id}
               id={`${id}-option-${index}`}
               key={map.id}
-              className={`select-option ${active === index ? "active" : ""}`}
+              className={`select-option zone-${map.zone_type || 'road'} ${active === index ? "active" : ""}`}
               onMouseEnter={() => setActive(index)}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(map)}
             >
-              <span className={`tier-dot t${map.tier}`} />
+              <span className={`tier-dot t${map.tier}`} style={map.zone_type && map.zone_type !== 'road' ? { background: zoneColors[map.zone_type] } : undefined} />
               <span>{map.name}</span>
               {boardIds.has(map.id) && <small>{t("select.onBoard")}</small>}
-              <span className="option-tier">T{map.tier}</span>
+              <span className="option-tier"><ZoneBadge map={map} /></span>
             </div>
           ))}
           {!options.length && <p className="no-results">{t("select.empty")}</p>}

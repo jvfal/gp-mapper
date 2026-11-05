@@ -31,6 +31,9 @@ def map_catalog(request):
     return JsonResponse({'maps': [
         {
             'id': roadmap.pk, 'name': roadmap.name, 'tier': roadmap.tier,
+            'zone_type': roadmap.zone_type, 'features_known': roadmap.features_known,
+            'is_hideout': roadmap.is_hideout,
+            'biome': roadmap.biome,
             'is_active': roadmap.is_active,
             'image_url': static(roadmap.image_static_path) if roadmap.image else None,
             'resources': serialize_features(roadmap.resources.all(), 'resource_type'),

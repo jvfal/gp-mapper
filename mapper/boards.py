@@ -54,7 +54,7 @@ def state(board):
     return {
         'version': 1,
         'nodes': [{'id': node_ids[node.pk], 'mapId': node.road_map_id,
-                   'position': {'x': node.x, 'y': node.y}, 'audit': attribution(node)} for node in nodes],
+                   'position': {'x': node.x, 'y': node.y}, 'isHome': node.is_home, 'audit': attribution(node)} for node in nodes],
         'edges': [{'id': edge.client_id, 'source': node_ids[edge.source_id],
                    'target': node_ids[edge.target_id], 'sourceHandle': edge.source_handle,
                    'targetHandle': edge.target_handle, 'expiresAt': round(edge.expires_at.timestamp() * 1000),
@@ -68,6 +68,9 @@ def state(board):
 def library_summary(board, user):
     return {**summary(board, user), 'preview': {
         'nodes': [{'id': node.pk, 'name': node.road_map.name, 'tier': node.road_map.tier,
+                   'zoneType': node.road_map.zone_type,
+                   'biome': node.road_map.biome,
+                   'isHome': node.is_home,
                    'x': node.x, 'y': node.y} for node in board.preview_nodes],
         'edges': [{'source': edge.source_id, 'target': edge.target_id,
                    'sourceHandle': edge.source_handle, 'targetHandle': edge.target_handle,
@@ -112,9 +115,15 @@ def validate_state(data):
         if node.get('id') != f'map-{map_id}' or map_id in ids or not isinstance(node.get('position'), dict):
             raise ValueError('invalid_state')
         ids.add(map_id)
-        clean_nodes.append((map_id, number(node['position'].get('x')), number(node['position'].get('y'))))
-    if RoadMap.objects.filter(pk__in=ids).count() != len(ids):
+        is_home = node.get('isHome', False)
+        if type(is_home) is not bool:
+            raise ValueError('invalid_state')
+        clean_nodes.append((map_id, number(node['position'].get('x')), number(node['position'].get('y')), is_home))
+    catalog = dict(RoadMap.objects.filter(pk__in=ids).values_list('id', 'is_hideout'))
+    if len(catalog) != len(ids):
         raise ValueError('invalid_map')
+    if any(home and not catalog[map_id] for map_id, _, _, home in clean_nodes):
+        raise ValueError('invalid_home')
     known = {f'map-{map_id}': map_id for map_id in ids}
     clean_edges, edge_ids, pairs = [], set(), set()
     for edge in edges:

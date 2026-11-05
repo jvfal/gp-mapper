@@ -30,9 +30,10 @@ def role_data(role):
 
 def member_profile(user):
     account = getattr(user, 'discord_account', None)
+    activity = getattr(user, 'mapper_activity', None)
     return {
         'joinedAt': user.date_joined.isoformat(),
-        'lastLoginAt': user.last_login.isoformat() if user.last_login else None,
+        'lastAccessAt': activity.last_access_at.isoformat() if activity else None,
         'discordUsername': account.username if account else None,
         'discordId': account.discord_id if account else None,
         'avatarUrl': f'https://cdn.discordapp.com/avatars/{account.discord_id}/{account.avatar}.png?size=64' if account and account.avatar else None,
@@ -44,7 +45,7 @@ def member_profile(user):
 def members(request):
     if not allowed(request):
         return JsonResponse({'error': 'permission_denied'}, status=403)
-    users = get_user_model().objects.filter(is_superuser=False).select_related('discord_account').prefetch_related('guild_roles', 'discord_guild_roles', 'groups').order_by('username')
+    users = get_user_model().objects.filter(is_superuser=False).select_related('discord_account', 'mapper_activity').prefetch_related('guild_roles', 'discord_guild_roles', 'groups').order_by('username')
     return JsonResponse({
         'roles': [role_data(role) for role in GuildRole.objects.all()],
         'members': [{

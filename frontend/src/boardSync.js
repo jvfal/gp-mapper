@@ -3,6 +3,7 @@ export function graphDocument(state) {
   const nodes = state.nodes.map((node) => ({
     id: node.id,
     mapId: node.mapId,
+    isHome: !!node.isHome,
     position: { ...node.position },
   }));
   const edges = state.edges.map((edge) => {
@@ -48,6 +49,8 @@ export function graphDiff(before, after) {
         mapId: node.mapId,
         position: node.position,
       });
+    if (!!old?.isHome !== !!node.isHome)
+      result.push({ type: 'node.home', mapId: node.mapId, isHome: !!node.isHome });
   }
   for (const [id, edge] of newEdges)
     if (!equal(oldEdges.get(id), edge))
@@ -66,6 +69,8 @@ export function applyGraphOps(document, operations) {
       nodes.set(id, { id, mapId: op.mapId, position: op.position });
     if (op.type === "node.move" && nodes.has(id))
       nodes.set(id, { ...nodes.get(id), position: op.position });
+    if (op.type === 'node.home' && nodes.has(id))
+      nodes.set(id, { ...nodes.get(id), isHome: op.isHome });
     if (op.type === "node.remove") {
       nodes.delete(id);
       for (const [key, edge] of edges)
