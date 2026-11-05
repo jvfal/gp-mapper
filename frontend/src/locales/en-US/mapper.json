@@ -352,10 +352,14 @@
     "invalidDiscordRole": "Enter a valid role ID containing up to 20 digits."
   },
   "modules": {
+    "botThreadPermissionsRequired": "To prevent conversations in threads, Discord requires the bot to also have: {{permissions}}. Update the invite permissions and authorize the bot again in this server.",
     "botPermissionsNotInstalled": "The bot installed in this server has not received: {{permissions}}. Check its Discord role and that the authorized invite belongs to the same bot used by this integration.",
     "channelPermissionsBlocked": "This channel or its category blocks these bot permissions: {{permissions}}. Allow these permissions for the bot in this channel.",
     "channelOperationDenied": "Discord refused to change this channel’s permissions. Check channel and category restrictions; contact support if the problem persists.",
     "discordPermissionNames": {
+      "CREATE_PUBLIC_THREADS": "Create Public Threads",
+      "CREATE_PRIVATE_THREADS": "Create Private Threads",
+      "SEND_MESSAGES_IN_THREADS": "Send Messages in Threads",
       "MANAGE_ROLES": "Manage Roles",
       "MANAGE_CHANNELS": "Manage Channels",
       "VIEW_CHANNEL": "View Channels",

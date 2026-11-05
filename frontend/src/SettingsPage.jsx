@@ -154,7 +154,7 @@ export function SettingsPage({ onChanged }) {
 
   function channelFailure(error) {
     setChannelErrorParams({ permissions: (error.missingPermissions || []).map((name) => t(`modules.discordPermissionNames.${name}`)).join(', ') });
-    const messages = { missing_permissions: 'modules.channelOperationDenied', bot_permissions_not_installed: 'modules.botPermissionsNotInstalled', channel_permissions_blocked: 'modules.channelPermissionsBlocked', member_role_not_found: 'modules.memberRoleMissing', invalid_discord_configuration: 'modules.discordConfigMissing', channel_changed: 'modules.channelSaveFirst' };
+    const messages = { missing_permissions: 'modules.channelOperationDenied', bot_permissions_not_installed: 'modules.botPermissionsNotInstalled', bot_thread_permissions_required: 'modules.botThreadPermissionsRequired', channel_permissions_blocked: 'modules.channelPermissionsBlocked', member_role_not_found: 'modules.memberRoleMissing', invalid_discord_configuration: 'modules.discordConfigMissing', channel_changed: 'modules.channelSaveFirst' };
     const botErrors = ['missing_token', 'wrong_guild', 'invalid_channel_type', 'invalid_token', 'channel_not_found', 'rate_limited', 'connection_error', 'certificate_error', 'discord_error', 'missing_access', 'discord_forbidden'];
     return messages[error.code] || (botErrors.includes(error.code) ? `modules.botStatus.${error.code}` : 'modules.channelSetupError');
   }

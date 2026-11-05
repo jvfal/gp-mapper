@@ -352,10 +352,14 @@
     "invalidDiscordRole": "Ingresa un ID de rol válido de hasta 20 dígitos."
   },
   "modules": {
+    "botThreadPermissionsRequired": "Para impedir conversaciones en hilos, Discord exige que el bot también tenga: {{permissions}}. Actualiza los permisos de la invitación y vuelve a autorizar al bot en este servidor.",
     "botPermissionsNotInstalled": "El bot instalado en este servidor todavía no tiene: {{permissions}}. Revisa su rol en Discord y que la invitación autorizada corresponda al mismo bot de la integración.",
     "channelPermissionsBlocked": "Este canal o su categoría bloquea estos permisos del bot: {{permissions}}. Permite estos permisos al bot en este canal.",
     "channelOperationDenied": "Discord rechazó el cambio de permisos de este canal. Revisa las restricciones del canal y de la categoría; si continúa, contacta con soporte.",
     "discordPermissionNames": {
+      "CREATE_PUBLIC_THREADS": "Crear hilos públicos",
+      "CREATE_PRIVATE_THREADS": "Crear hilos privados",
+      "SEND_MESSAGES_IN_THREADS": "Enviar mensajes en hilos",
       "MANAGE_ROLES": "Gestionar roles",
       "MANAGE_CHANNELS": "Gestionar canales",
       "VIEW_CHANNEL": "Ver canales",

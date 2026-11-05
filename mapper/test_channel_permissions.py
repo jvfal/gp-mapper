@@ -8,7 +8,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .channel_permissions import (
-    BOT_ACCESS, READ, WRITE, MANAGE_ROLES, SEND_MESSAGES, REQUIRED_PERMISSIONS,
+    BOT_ACCESS, READ, WRITE, MANAGE_ROLES, SEND_MESSAGES, REQUIRED_PERMISSIONS, THREAD_PERMISSIONS,
     channel_overwrites, check_bot_permissions, configure_notification_channel,
 )
 from .discord_bot import BotError, discord_request
@@ -52,14 +52,35 @@ class ChannelOverwriteTests(SimpleTestCase):
     @patch('mapper.channel_permissions.discord_request')
     def test_setup_grants_bot_first_then_updates_only_the_selected_channel(self, request):
         channel = {'id': '500', 'guild_id': '100', 'type': 0, 'name': 'route-alerts', 'permission_overwrites': []}
-        roles = [{'id': '200', 'managed': False}, {'id': '201', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()))}]
+        roles = [{'id': '200', 'managed': False}, {'id': '201', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()) | sum(THREAD_PERMISSIONS.values()))}]
         request.side_effect = [(channel, 0), (roles, 0), ({'id': '999', 'bot': True}, 0), ({'roles': ['201']}, 0), (None, 0), (channel, 0)]
         self.assertEqual(configure_notification_channel('500'), 'route-alerts')
         self.assertEqual(request.call_args_list[4].args[0], '/channels/500/permissions/999')
         self.assertEqual(request.call_args_list[4].kwargs, {'method': 'PUT'})
-        self.assertTrue(int(request.call_args_list[4].args[1]['allow']) & MANAGE_ROLES)
+        self.assertFalse(int(request.call_args_list[4].args[1]['allow']) & MANAGE_ROLES)
         self.assertEqual(request.call_args_list[5].args[0], '/channels/500')
         self.assertEqual(request.call_args_list[5].kwargs, {'method': 'PATCH'})
+
+    @override_settings(DISCORD_GUILD_ID='100', DISCORD_MEMBER_ROLE_ID='200')
+    @patch('mapper.channel_permissions.discord_request')
+    def test_missing_thread_permissions_stops_before_writes_instead_of_self_granting_manage_roles(self, request):
+        channel = {'id': '500', 'guild_id': '100', 'type': 0, 'name': 'alerts', 'permission_overwrites': []}
+        roles = [{'id': '200', 'managed': False}, {'id': '201', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()))}]
+        request.side_effect = [(channel, 0), (roles, 0), ({'id': '999', 'bot': True}, 0), ({'roles': ['201']}, 0)]
+        with self.assertRaises(BotError) as caught:
+            configure_notification_channel('500')
+        self.assertEqual(caught.exception.code, 'bot_thread_permissions_required')
+        self.assertEqual(set(caught.exception.missing_permissions), set(THREAD_PERMISSIONS))
+        self.assertEqual(request.call_count, 4)
+
+    @override_settings(DISCORD_GUILD_ID='100')
+    @patch('mapper.channel_permissions.notification_channel', return_value={
+        'permission_overwrites': [{'id': '201', 'type': 0, 'allow': str(sum(THREAD_PERMISSIONS.values())), 'deny': '0'}],
+    })
+    def test_parent_thread_permissions_are_considered_without_granting_new_privileges(self, parent):
+        roles = [{'id': '201', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()))}]
+        check_bot_permissions({'parent_id': '600'}, roles, {'roles': ['201']}, '999')
+        parent.assert_called_once_with('600', category=True)
 
     @override_settings(DISCORD_GUILD_ID='100')
     def test_channel_restrictions_distinguished_from_permissions_not_granted_to_installed_bot(self):
@@ -94,7 +115,7 @@ class ChannelOverwriteTests(SimpleTestCase):
     @patch('mapper.channel_permissions.discord_request')
     def test_failed_write_retains_exact_operation_for_support(self, request):
         channel = {'id': '500', 'guild_id': '100', 'type': 0, 'name': 'alerts', 'permission_overwrites': []}
-        roles = [{'id': '200', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()))}]
+        roles = [{'id': '200', 'permissions': str(sum(REQUIRED_PERMISSIONS.values()) | sum(THREAD_PERMISSIONS.values()))}]
         request.side_effect = [(channel, 0), (roles, 0), ({'id': '999', 'bot': True}, 0), ({'roles': ['200']}, 0), BotError('missing_permissions', http_status=403, discord_code=50013)]
         with self.assertRaises(BotError) as caught:
             configure_notification_channel('500')

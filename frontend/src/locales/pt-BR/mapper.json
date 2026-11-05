@@ -352,10 +352,14 @@
     "invalidDiscordRole": "Informe um ID de cargo válido, com até 20 números."
   },
   "modules": {
+    "botThreadPermissionsRequired": "Para impedir conversas em tópicos, o Discord exige que o bot também tenha: {{permissions}}. Atualize as permissões do convite e autorize novamente o bot neste servidor.",
     "botPermissionsNotInstalled": "O bot instalado neste servidor ainda não recebeu: {{permissions}}. Confira o cargo do bot no Discord e se o convite autorizado pertence ao mesmo bot da integração.",
     "channelPermissionsBlocked": "O canal ou sua categoria bloqueia estas permissões do bot: {{permissions}}. Libere essas permissões para ele neste canal.",
     "channelOperationDenied": "O Discord recusou a alteração das permissões deste canal. Confira as restrições do canal e da categoria; se continuar, entre em contato com o suporte.",
     "discordPermissionNames": {
+      "CREATE_PUBLIC_THREADS": "Criar tópicos públicos",
+      "CREATE_PRIVATE_THREADS": "Criar tópicos privados",
+      "SEND_MESSAGES_IN_THREADS": "Enviar mensagens em tópicos",
       "MANAGE_ROLES": "Gerenciar cargos",
       "MANAGE_CHANNELS": "Gerenciar canais",
       "VIEW_CHANNEL": "Ver canais",
