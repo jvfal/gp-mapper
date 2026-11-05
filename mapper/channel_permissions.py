@@ -4,6 +4,8 @@ from django.conf import settings
 from .discord_bot import BotError, discord_request
 
 MANAGE_ROLES = 1 << 28
+MANAGE_CHANNELS = 1 << 4
+ADMINISTRATOR = 1 << 3
 VIEW_CHANNEL = 1 << 10
 SEND_MESSAGES = 1 << 11
 EMBED_LINKS = 1 << 14
@@ -15,6 +17,39 @@ WRITE = SEND_MESSAGES | CREATE_PUBLIC_THREADS | CREATE_PRIVATE_THREADS | SEND_IN
 READ = VIEW_CHANNEL | READ_HISTORY
 CONTROLLED = READ | WRITE
 BOT_ACCESS = READ | SEND_MESSAGES | EMBED_LINKS | MANAGE_ROLES
+REQUIRED_PERMISSIONS = {
+    'MANAGE_ROLES': MANAGE_ROLES, 'MANAGE_CHANNELS': MANAGE_CHANNELS,
+    'VIEW_CHANNEL': VIEW_CHANNEL, 'SEND_MESSAGES': SEND_MESSAGES,
+    'EMBED_LINKS': EMBED_LINKS, 'READ_MESSAGE_HISTORY': READ_HISTORY,
+}
+
+
+def check_bot_permissions(channel, roles, member, bot_id):
+    role_ids = {settings.DISCORD_GUILD_ID, *member.get('roles', [])}
+    base = 0
+    for role in roles:
+        if role.get('id') in role_ids:
+            base |= int(role.get('permissions', '0'))
+    if base & ADMINISTRATOR:
+        return
+    overwrites = [clean_overwrite(item) for item in channel.get('permission_overwrites', [])]
+    effective = base
+    for item in overwrites:
+        if item['type'] == 0 and item['id'] == settings.DISCORD_GUILD_ID:
+            effective = (effective & ~item['deny']) | item['allow']
+    allow = deny = 0
+    for item in overwrites:
+        if item['type'] == 0 and item['id'] in role_ids and item['id'] != settings.DISCORD_GUILD_ID:
+            allow |= item['allow']
+            deny |= item['deny']
+    effective = (effective & ~deny) | allow
+    for item in overwrites:
+        if item['type'] == 1 and item['id'] == bot_id:
+            effective = (effective & ~item['deny']) | item['allow']
+    missing = [name for name, bit in REQUIRED_PERMISSIONS.items() if not effective & bit]
+    if missing:
+        code = 'bot_permissions_not_installed' if any(not base & REQUIRED_PERMISSIONS[name] for name in missing) else 'channel_permissions_blocked'
+        raise BotError(code, stage='check_bot_permissions', missing_permissions=missing)
 
 
 def clean_overwrite(overwrite):
@@ -54,15 +89,19 @@ def channel_overwrites(existing, guild_id, role_id, bot_id):
     return [wire(item) for item in overwrites.values()]
 
 
-def checked_request(*args, **kwargs):
-    result, delay = discord_request(*args, **kwargs)
+def checked_request(*args, stage=None, **kwargs):
+    try:
+        result, delay = discord_request(*args, **kwargs)
+    except BotError as error:
+        error.stage = stage
+        raise
     if delay:
-        raise BotError('rate_limited', delay)
+        raise BotError('rate_limited', delay, stage=stage)
     return result
 
 
 def notification_channel(channel_id):
-    channel = checked_request(f'/channels/{channel_id}')
+    channel = checked_request(f'/channels/{channel_id}', stage='read_channel')
     if not isinstance(channel, dict) or channel.get('guild_id') != settings.DISCORD_GUILD_ID:
         raise BotError('wrong_guild')
     if channel.get('type') not in (0, 5):
@@ -75,22 +114,30 @@ def notification_channel(channel_id):
 def configure_notification_channel(channel_id):
     guild_id, role_id = settings.DISCORD_GUILD_ID, settings.DISCORD_MEMBER_ROLE_ID
     channel = notification_channel(channel_id)
-    roles = checked_request(f'/guilds/{guild_id}/roles')
+    roles = checked_request(f'/guilds/{guild_id}/roles', stage='read_roles')
     if not isinstance(roles, list) or role_id == guild_id or not any(
         role.get('id') == role_id and not role.get('managed') for role in roles if isinstance(role, dict)
     ):
         raise BotError('member_role_not_found')
-    bot = checked_request('/users/@me')
+    bot = checked_request('/users/@me', stage='identify_bot')
     if not isinstance(bot, dict) or not bot.get('bot') or not isinstance(bot.get('id'), str) or not bot['id'].isascii() or not bot['id'].isdecimal():
         raise BotError('invalid_token')
+    member = checked_request(f'/guilds/{guild_id}/members/{bot["id"]}', stage='read_bot_membership')
+    if not isinstance(member, dict) or not isinstance(member.get('roles'), list):
+        raise BotError('discord_error', stage='read_bot_membership')
+    check_bot_permissions(channel, roles, member, bot['id'])
     overwrites = channel_overwrites(channel.get('permission_overwrites', []), guild_id, role_id, bot['id'])
     bot_overwrite = next(item for item in overwrites if item['type'] == 1 and item['id'] == bot['id'])
     # Grant the bot its explicit channel access first, preventing accidental lockout.
     # A channel MANAGE_ROLES overwrite also permits denying thread permissions
     # without requiring those unnecessary permissions on the bot's server role.
-    checked_request(f'/channels/{channel_id}/permissions/{bot["id"]}', bot_overwrite, method='PUT')
+    checked_request(f'/channels/{channel_id}/permissions/{bot["id"]}', bot_overwrite, method='PUT', stage='grant_bot_access')
     # Apply the channel's complete set in a single update, retaining unrelated bits.
-    result, _ = discord_request(f'/channels/{channel_id}', {'permission_overwrites': overwrites}, method='PATCH')
+    try:
+        result, _ = discord_request(f'/channels/{channel_id}', {'permission_overwrites': overwrites}, method='PATCH')
+    except BotError as error:
+        error.stage = 'apply_channel_overwrites'
+        raise
     if not isinstance(result, dict) or result.get('id') != channel_id or result.get('guild_id') != guild_id:
         raise BotError('discord_error')
     return channel['name']

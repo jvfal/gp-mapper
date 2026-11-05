@@ -10,9 +10,13 @@ from django.views.decorators.debug import sensitive_variables
 
 
 class BotError(Exception):
-    def __init__(self, code, retry_after=60):
+    def __init__(self, code, retry_after=60, *, http_status=None, discord_code=None, stage=None, missing_permissions=()):
         self.code = code
         self.retry_after = retry_after
+        self.http_status = http_status
+        self.discord_code = discord_code
+        self.stage = stage
+        self.missing_permissions = tuple(missing_permissions)
         super().__init__(code)
 
 
@@ -53,8 +57,18 @@ def discord_request(path, payload=None, *, method=None):
             except (ValueError, AttributeError):
                 delay = retry_delay(error.headers.get('Retry-After'))
             raise BotError('rate_limited', delay) from None
+        # Retain only the numeric Discord error, never its raw body or headers.
+        try:
+            details = json.loads(error.read(65536))
+            discord_code = details.get('code') if isinstance(details, dict) else None
+            if type(discord_code) is not int:
+                discord_code = None
+        except (ValueError, TypeError, AttributeError, OSError):
+            discord_code = None
         code = {401: 'invalid_token', 403: 'missing_permissions', 404: 'channel_not_found'}.get(error.code, 'discord_error')
-        raise BotError(code) from None
+        if error.code == 403:
+            code = {50001: 'missing_access', 50013: 'missing_permissions'}.get(discord_code, 'discord_forbidden')
+        raise BotError(code, http_status=error.code, discord_code=discord_code) from None
     except URLError as error:
         code = 'certificate_error' if isinstance(error.reason, ssl.SSLCertVerificationError) else 'connection_error'
         raise BotError(code) from None

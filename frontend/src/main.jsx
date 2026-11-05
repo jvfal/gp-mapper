@@ -28,6 +28,7 @@ import { DeleteBoardDialog } from "./DeleteBoardDialog";
 import { AccountMenu, DiscordStatus } from "./AccountMenu";
 import { Brand, guildName } from "./Brand";
 import { BoardLibrary, BoardName } from "./BoardLibrary";
+import { FirstVisitLanguage } from "./FirstVisitLanguage";
 import { useBoardRealtime } from "./useBoardRealtime";
 import { Icon } from "./icons";
 import { MapSelect } from "./MapSelect";
@@ -1119,5 +1120,6 @@ function App({ board, user, onBack, onReload, iconUrl }) {
 createRoot(document.getElementById("mapper-root")).render(
   <React.StrictMode>
     <BoardLibrary Editor={App} />
+    <FirstVisitLanguage />
   </React.StrictMode>,
 );

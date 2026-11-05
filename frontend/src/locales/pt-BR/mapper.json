@@ -352,6 +352,17 @@
     "invalidDiscordRole": "Informe um ID de cargo válido, com até 20 números."
   },
   "modules": {
+    "botPermissionsNotInstalled": "O bot instalado neste servidor ainda não recebeu: {{permissions}}. Confira o cargo do bot no Discord e se o convite autorizado pertence ao mesmo bot da integração.",
+    "channelPermissionsBlocked": "O canal ou sua categoria bloqueia estas permissões do bot: {{permissions}}. Libere essas permissões para ele neste canal.",
+    "channelOperationDenied": "O Discord recusou a alteração das permissões deste canal. Confira as restrições do canal e da categoria; se continuar, entre em contato com o suporte.",
+    "discordPermissionNames": {
+      "MANAGE_ROLES": "Gerenciar cargos",
+      "MANAGE_CHANNELS": "Gerenciar canais",
+      "VIEW_CHANNEL": "Ver canais",
+      "SEND_MESSAGES": "Enviar mensagens",
+      "EMBED_LINKS": "Inserir links",
+      "READ_MESSAGE_HISTORY": "Ver histórico de mensagens"
+    },
     "collapseOptions": "Recolher configurações de {{module}}",
     "expandOptions": "Abrir configurações de {{module}}",
     "reconfigureChannel": "Reconfigurar canal de avisos",
@@ -375,6 +386,8 @@
     "preservationHint": "Desabilitar interrompe o acesso ao Mapeador, inclusive de quem está usando. Seus mapas ficam salvos e voltam ao reativar o módulo.",
     "discordTitle": "Avisos no Discord",
     "botStatus": {
+      "missing_access": "O bot não tem acesso ao canal ou servidor",
+      "discord_forbidden": "Discord recusou a solicitação; consulte o suporte",
       "ready": "Bot conectado",
       "missing_token": "Token do bot não configurado",
       "missing_guild": "Servidor Discord não configurado",

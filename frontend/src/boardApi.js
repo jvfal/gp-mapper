@@ -33,7 +33,9 @@ export async function apiRequest(url, { method = "GET", body, signal } = {}) {
     const error = new Error(`Board request failed: ${response.status}`);
     error.status = response.status;
     try {
-      error.code = (await response.json()).error;
+      const detail = await response.json();
+      error.code = detail.error;
+      error.missingPermissions = detail.missingPermissions;
     } catch {
       /* CSRF errors may return HTML. */
     }

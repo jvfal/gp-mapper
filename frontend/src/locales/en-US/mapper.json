@@ -352,6 +352,17 @@
     "invalidDiscordRole": "Enter a valid role ID containing up to 20 digits."
   },
   "modules": {
+    "botPermissionsNotInstalled": "The bot installed in this server has not received: {{permissions}}. Check its Discord role and that the authorized invite belongs to the same bot used by this integration.",
+    "channelPermissionsBlocked": "This channel or its category blocks these bot permissions: {{permissions}}. Allow these permissions for the bot in this channel.",
+    "channelOperationDenied": "Discord refused to change this channel’s permissions. Check channel and category restrictions; contact support if the problem persists.",
+    "discordPermissionNames": {
+      "MANAGE_ROLES": "Manage Roles",
+      "MANAGE_CHANNELS": "Manage Channels",
+      "VIEW_CHANNEL": "View Channels",
+      "SEND_MESSAGES": "Send Messages",
+      "EMBED_LINKS": "Embed Links",
+      "READ_MESSAGE_HISTORY": "Read Message History"
+    },
     "collapseOptions": "Collapse {{module}} settings",
     "expandOptions": "Expand {{module}} settings",
     "reconfigureChannel": "Reconfigure notification channel",
@@ -375,6 +386,8 @@
     "preservationHint": "Disabling interrupts access to the Mapper, including active sessions. Your maps remain saved and return when the module is enabled again.",
     "discordTitle": "Discord notifications",
     "botStatus": {
+      "missing_access": "Bot cannot access the channel or server",
+      "discord_forbidden": "Discord refused the request; contact support",
       "ready": "Bot connected",
       "missing_token": "Bot token not configured",
       "missing_guild": "Discord server not configured",

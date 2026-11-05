@@ -16,7 +16,7 @@ function supportedLanguage(value) {
   return { pt: "pt-BR", en: "en-US", es: "es" }[base];
 }
 
-function detectLanguage() {
+export function savedLanguage() {
   try {
     const preference = supportedLanguage(localStorage.getItem(LANGUAGE_KEY));
     if (preference) return preference;
@@ -33,6 +33,12 @@ function detectLanguage() {
   } catch {
     /* Ignore malformed cookies and use browser preferences. */
   }
+  return null;
+}
+
+function detectLanguage() {
+  const preference = savedLanguage();
+  if (preference) return preference;
   for (const language of navigator.languages || [navigator.language]) {
     const supported = supportedLanguage(language);
     if (supported) return supported;

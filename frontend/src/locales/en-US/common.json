@@ -1,4 +1,9 @@
 {
+  "languageWelcome": {
+    "title": "Which language do you prefer?",
+    "hint": "We will remember your choice in this browser. You can change your language from the menu at the top at any time.",
+    "continue": "Continue"
+  },
   "language": "Language",
   "actions": {
     "cancel": "Cancel",

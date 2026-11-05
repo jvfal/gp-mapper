@@ -19,6 +19,7 @@ export function SettingsPage({ onChanged }) {
   const [savedChannel, setSavedChannel] = useState('');
   const [channelConfirm, setChannelConfirm] = useState(false);
   const [channelError, setChannelError] = useState('');
+  const [channelErrorParams, setChannelErrorParams] = useState({});
   const [channelConfigured, setChannelConfigured] = useState('');
   const [channelTarget, setChannelTarget] = useState(null);
   const channelDialog = useRef(null);
@@ -152,8 +153,9 @@ export function SettingsPage({ onChanged }) {
   }
 
   function channelFailure(error) {
-    const messages = { missing_permissions: 'modules.channelSetupPermissions', member_role_not_found: 'modules.memberRoleMissing', invalid_discord_configuration: 'modules.discordConfigMissing', channel_changed: 'modules.channelSaveFirst' };
-    const botErrors = ['missing_token', 'wrong_guild', 'invalid_channel_type', 'invalid_token', 'channel_not_found', 'rate_limited', 'connection_error', 'certificate_error', 'discord_error'];
+    setChannelErrorParams({ permissions: (error.missingPermissions || []).map((name) => t(`modules.discordPermissionNames.${name}`)).join(', ') });
+    const messages = { missing_permissions: 'modules.channelOperationDenied', bot_permissions_not_installed: 'modules.botPermissionsNotInstalled', channel_permissions_blocked: 'modules.channelPermissionsBlocked', member_role_not_found: 'modules.memberRoleMissing', invalid_discord_configuration: 'modules.discordConfigMissing', channel_changed: 'modules.channelSaveFirst' };
+    const botErrors = ['missing_token', 'wrong_guild', 'invalid_channel_type', 'invalid_token', 'channel_not_found', 'rate_limited', 'connection_error', 'certificate_error', 'discord_error', 'missing_access', 'discord_forbidden'];
     return messages[error.code] || (botErrors.includes(error.code) ? `modules.botStatus.${error.code}` : 'modules.channelSetupError');
   }
   async function openChannelSetup() {
@@ -190,7 +192,7 @@ export function SettingsPage({ onChanged }) {
       <h2 id="channel-confirm-title">{t('modules.channelConfirmTitle')}</h2>
       <p id="channel-confirm-hint">{t('modules.channelConfirmHint', { channel: channelTarget?.channelName || '' })}</p>
       <p>{t('modules.channelConfirmImpact')}</p>
-      {channelError && <p className="library-error" role="alert">{t(channelError)}</p>}
+      {channelError && <p className="library-error" role="alert">{t(channelError, channelErrorParams)}</p>}
       <div className="module-confirm-actions">
         <button ref={cancelChannel} type="button" className="button secondary" disabled={busy} onClick={() => setChannelConfirm(false)}>{t('common:actions.cancel')}</button>
         <button type="button" className="button primary" disabled={busy} onClick={setupChannel}>{t(busy ? 'modules.channelConfiguring' : channelTarget?.configured ? 'modules.reconfigureChannel' : 'modules.configureChannel')}</button>
@@ -265,7 +267,7 @@ export function SettingsPage({ onChanged }) {
           <p className="muted">{t('modules.channelHint')}</p>
           <div className="channel-setup-feedback">
             <p className="muted">{t(module.settings.discordChannelId !== savedChannel || !savedChannel ? 'modules.channelSaveFirst' : 'modules.channelSetupHint')}</p>
-            {channelError && !channelConfirm && <p className="library-error" role="alert">{t(channelError)}</p>}
+            {channelError && !channelConfirm && <p className="library-error" role="alert">{t(channelError, channelErrorParams)}</p>}
             {channelConfigured && <p className="module-saved-status" role="status">{t('modules.channelConfigured', { name: channelConfigured })}</p>}
           </div>
           <div className="module-save-actions">

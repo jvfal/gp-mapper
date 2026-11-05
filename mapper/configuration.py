@@ -125,7 +125,11 @@ def prepare_discord_channel(request):
             else:
                 channel_name = configure_notification_channel(config.discord_channel_id)
         except BotError as error:
-            response = JsonResponse({'error': error.code, 'retryAfter': error.retry_after}, status=429 if error.code == 'rate_limited' else 400)
+            logger.warning('Discord channel setup failed: stage=%s http_status=%s discord_code=%s error=%s missing_permissions=%s',
+                           error.stage, error.http_status, error.discord_code, error.code, ','.join(error.missing_permissions))
+            response = JsonResponse({'error': error.code, 'retryAfter': error.retry_after,
+                                     'stage': error.stage, 'discordCode': error.discord_code,
+                                     'missingPermissions': error.missing_permissions}, status=429 if error.code == 'rate_limited' else 400)
             if error.code == 'rate_limited':
                 response['Retry-After'] = str(math.ceil(error.retry_after))
             return response
