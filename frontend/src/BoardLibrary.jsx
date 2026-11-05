@@ -3,8 +3,11 @@ import { useTranslation } from "react-i18next";
 import { ReactFlowProvider } from "@xyflow/react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Icon } from "./icons";
-import { boardApi } from "./boardApi";
+import { boardApi, libraryData } from "./boardApi";
 import { AccountMenu } from "./AccountMenu";
+import { Brand, guildName } from "./Brand";
+import { MembersPage } from "./MembersPage";
+import { SettingsPage } from "./SettingsPage";
 
 export function BoardLibrary({ Editor }) {
   const { t, i18n } = useTranslation("mapper");
@@ -13,23 +16,36 @@ export function BoardLibrary({ Editor }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [scope, setScope] = useState("guild");
+  const [scope, setScope] = useState("private");
+  const [page, setPage] = useState(() => {
+    const requested = new URLSearchParams(location.search).get("page");
+    return ["members", "settings"].includes(requested) ? requested : "boards";
+  });
   const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    const label = active ? t("page.product")
+      : page === "settings" && data?.user?.permissions?.canManageSettings ? t("modules.title")
+      : page === "members" && data?.user?.permissions?.canManageMembers ? t("members.title")
+      : data?.modules?.mapper === false ? "" : t("page.product");
+    document.title = label ? `${guildName()} · ${label}` : guildName();
+  }, [active, page, data?.modules?.mapper, data?.user?.permissions?.canManageSettings, data?.user?.permissions?.canManageMembers, t]);
 
   useEffect(() => {
     const url = new URL(location.href);
     const authError = url.searchParams.get("auth_error");
-    if (["cancelled", "failed", "expired", "unavailable", "inactive"].includes(authError)) {
+    if (["cancelled", "failed", "expired", "unavailable", "inactive", "membership_required"].includes(authError)) {
       setError("auth.errors." + authError);
       url.searchParams.delete("auth_error");
       history.replaceState(null, "", url.pathname + url.search);
     }
     const controller = new AbortController();
-    boardApi("", { signal: controller.signal })
+    libraryData({ signal: controller.signal })
       .then(async (result) => {
         setData(result);
+        setScope(result.user?.permissions?.canCreateGuildMaps ? "guild" : "private");
         const id = new URLSearchParams(location.search).get("board");
-        if (id && result.user) {
+        if (id && result.user?.canAccess && result.modules.mapper) {
           const detail = await boardApi(`${encodeURIComponent(id)}/`, {
             signal: controller.signal,
           });
@@ -41,6 +57,18 @@ export function BoardLibrary({ Editor }) {
       });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (!data?.user) return;
+    const controller = new AbortController();
+    const interval = setInterval(() => {
+      libraryData({ signal: controller.signal }).then((result) => {
+        setData(result);
+        if (!result.modules.mapper || !result.user?.canAccess) setActive(null);
+      }).catch(() => {});
+    }, data.user.approvalPending ? 5000 : 15000);
+    return () => { clearInterval(interval); controller.abort(); };
+  }, [data?.user?.id, data?.user?.approvalPending]);
 
   async function open(board) {
     setBusy(true);
@@ -87,12 +115,13 @@ export function BoardLibrary({ Editor }) {
     }
   }
 
-  async function back() {
-    history.replaceState(null, "", "/");
+  async function back(destination = "boards") {
+    history.replaceState(null, "", destination === "boards" ? "/" : `/?page=${destination}`);
+    setPage(destination);
     setActive(null);
     setError("");
     try {
-      setData(await boardApi());
+      setData(await libraryData());
     } catch {
       setError("library.loadError");
     }
@@ -101,36 +130,30 @@ export function BoardLibrary({ Editor }) {
   if (active)
     return (
       <ReactFlowProvider key={`${active.id}:${active.revision}`}>
-        <Editor board={active} user={data.user} onBack={back} onReload={() => open(active)} />
+        <Editor board={active} user={data.user} iconUrl={data.branding?.iconUrl} onBack={back} onReload={() => open(active)} />
       </ReactFlowProvider>
     );
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <a href="/" className="brand">
-          <span className="brand-mark">
-            <Icon name="compass" size={25} />
-          </span>
-          <span>
-            AVALON<span className="brand-roads">ROADS</span>
-          </span>
-          <span className="brand-product">Mapper</span>
-        </a>
+        <Brand iconUrl={data?.branding?.iconUrl} page={page} showMaps={Boolean(data?.user?.canAccess && data?.modules?.mapper)} onMaps={() => back("boards")} onMembers={data?.user?.permissions?.canManageMembers ? () => back("members") : undefined} />
         <div className="header-right">
           <LanguageSwitcher />
           <AccountMenu user={data?.user} />
-          {data?.user?.isStaff && <a className="admin-link" href="/admin/">
-            Admin <Icon name="arrow" size={15} />
-          </a>}
+          {data?.user?.permissions?.canManageSettings && <button className="admin-link settings-link" aria-current={page === "settings" ? "page" : undefined} onClick={() => back("settings")}>
+            {t("modules.title")} <Icon name="arrow" size={15} />
+          </button>}
         </div>
       </header>
+      {page === "members" && data?.user?.permissions?.canManageMembers ? <MembersPage /> :
+      page === "settings" && data?.user?.permissions?.canManageSettings ? <SettingsPage onChanged={() => back("settings")} /> :
       <main className="board-library">
         <div className="page-heading">
           <div>
-            <span className="eyebrow">AVALON ROADS</span>
+            <span className="eyebrow">{guildName()}</span>
             <h1>
-              {t("library.title")}
+              {t(data?.user?.canAccess && data.modules.mapper === false ? "modules.noneTitle" : "library.title")}
               <span>.</span>
             </h1>
             <p>
@@ -153,11 +176,20 @@ export function BoardLibrary({ Editor }) {
             {t("library.loading")}
           </p>
         )}
-        {data && !data.user && (
+        {data?.user?.approvalPending && (
+          <section className="library-panel" aria-live="polite">
+            <Icon name="compass" size={32} />
+            <h2>{t("members.pendingTitle")}</h2>
+            <p>{t("members.pendingHint")}</p>
+            <button className="button secondary" onClick={() => back()}>{t("members.checkApproval")}</button>
+          </section>
+        )}
+        {data && !data.user?.canAccess && !data.user?.approvalPending && (
           <section className="library-panel">
             <Icon name="compass" size={32} />
             <h2>{t("library.signInTitle")}</h2>
             <p>{t("library.signInHint")}</p>
+            {data.user && <p role="alert">{t("auth.errors.membership_required")}</p>}
             {data.auth.discordEnabled ? <a className="button discord-button" href={`/auth/discord/login/?next=${encodeURIComponent(location.pathname + location.search)}`}>
               <Icon name="link" size={18} />{t("auth.discord")}
             </a> : <button className="button discord-button" disabled>{t("auth.discord")}</button>}
@@ -165,7 +197,14 @@ export function BoardLibrary({ Editor }) {
             <a className="text-button" href="/admin/login/?next=/">{t("library.signIn")}</a>
           </section>
         )}
-        {data?.user && (
+        {data?.user?.canAccess && !data.modules.mapper && (
+          <section className="library-panel">
+            <Icon name="compass" size={32} />
+            <p>{t("modules.noneHint")}</p>
+            {data.user.permissions.canManageSettings && <button className="button primary" onClick={() => back("settings")}>{t("modules.title")}</button>}
+          </section>
+        )}
+        {data?.user?.canAccess && data.modules.mapper && (
           <>
             <form className="board-create library-panel" onSubmit={create}>
               <div>
@@ -188,7 +227,7 @@ export function BoardLibrary({ Editor }) {
                   value={scope}
                   onChange={(event) => setScope(event.target.value)}
                 >
-                  <option value="guild">{t("sharing.guild")}</option>
+                  {data.user.permissions.canCreateGuildMaps && <option value="guild">{t("sharing.guild")}</option>}
                   <option value="private">{t("sharing.private")}</option>
                 </select>
               </label>
@@ -235,8 +274,10 @@ export function BoardLibrary({ Editor }) {
                       <span>{t("sharing.filter_" + board.scope)}</span>
                       <span>
                         {t(
-                          board.permissions.canManage
+                          board.isOwner
                             ? "sharing.owner"
+                            : board.permissions.canManage
+                              ? "sharing.guildMaster"
                             : board.permissions.canEdit
                               ? "sharing.editor"
                               : "sharing.viewer",
@@ -271,7 +312,7 @@ export function BoardLibrary({ Editor }) {
             )}
           </>
         )}
-      </main>
+      </main>}
     </div>
   );
 }

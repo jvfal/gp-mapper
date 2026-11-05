@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 
 
 class DiscordAccount(models.Model):
@@ -10,10 +11,76 @@ class DiscordAccount(models.Model):
     username = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100)
     avatar = models.CharField(max_length=100, blank=True)
+    guild_id = models.CharField(max_length=20, blank=True)
+    is_member = models.BooleanField(default=False)
+    manually_approved = models.BooleanField(default=False)
+    approval_guild_id = models.CharField(max_length=20, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='approved_discord_accounts',
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.display_name
+
+
+class GuildRole(models.Model):
+    name = models.CharField(max_length=60, unique=True)
+    members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='guild_roles', blank=True)
+    discord_role_id = models.CharField(
+        max_length=20, blank=True,
+        validators=[RegexValidator(r'^[0-9]{1,20}$', 'Informe um ID de cargo válido.')],
+    )
+    discord_members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name='discord_guild_roles', blank=True,
+    )
+    is_default = models.BooleanField(default=False)
+    can_view_guild_maps = models.BooleanField(default=True)
+    can_create_guild_maps = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['is_default'], condition=models.Q(is_default=True), name='mapper_one_default_role'),
+            models.CheckConstraint(condition=models.Q(can_create_guild_maps=False) | models.Q(can_view_guild_maps=True), name='mapper_create_requires_view'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class GuildBranding(models.Model):
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    icon_data = models.BinaryField(default=bytes, blank=True)
+    icon_digest = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(id=1), name='mapper_single_branding')]
+
+
+class GuildModule(models.Model):
+    class Code(models.TextChoices):
+        MAPPER = 'mapper', 'Mapeador'
+
+    code = models.CharField(max_length=30, primary_key=True, choices=Code.choices)
+    enabled = models.BooleanField(default=True)
+
+
+class MapperModuleSettings(models.Model):
+    module = models.OneToOneField(GuildModule, on_delete=models.CASCADE, related_name='mapper_settings')
+    discord_channel_id = models.CharField(
+        max_length=20, blank=True,
+        validators=[RegexValidator(r'^[0-9]{1,20}$', 'Informe um ID de canal válido.')],
+    )
+    warning_minutes = models.PositiveSmallIntegerField(
+        default=15, validators=[MinValueValidator(1), MaxValueValidator(120)],
+    )
+    bot_last_seen = models.DateTimeField(null=True, blank=True)
+    bot_checked_at = models.DateTimeField(null=True, blank=True)
+    bot_last_error = models.CharField(max_length=40, blank=True)
+    bot_retry_at = models.DateTimeField(null=True, blank=True)
 
 
 class Board(models.Model):
@@ -92,7 +159,7 @@ class BoardConnection(models.Model):
     target = models.ForeignKey(BoardNode, on_delete=models.CASCADE, related_name='incoming')
     source_handle = models.CharField(max_length=6, choices=Handle.choices)
     target_handle = models.CharField(max_length=6, choices=Handle.choices)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField(db_index=True)
 
     class Meta:
         constraints = [
@@ -102,3 +169,23 @@ class BoardConnection(models.Model):
             models.CheckConstraint(condition=models.Q(source_handle__in=['top', 'bottom', 'left', 'right']), name='mapper_edge_source_handle'),
             models.CheckConstraint(condition=models.Q(target_handle__in=['top', 'bottom', 'left', 'right']), name='mapper_edge_target_handle'),
         ]
+
+
+class RouteNotification(models.Model):
+    class Kind(models.TextChoices):
+        WARNING = 'warning', 'Warning'
+        EXPIRED = 'expired', 'Expired'
+
+    # Connections may be deleted/recreated when edited: use their stable client ID.
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='route_notifications')
+    connection_id = models.CharField(max_length=100)
+    expires_at = models.DateTimeField()
+    kind = models.CharField(max_length=7, choices=Kind.choices)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=40, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['board', 'connection_id', 'expires_at', 'kind'], name='mapper_route_notification_unique',
+        )]

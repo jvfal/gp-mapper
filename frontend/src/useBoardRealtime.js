@@ -34,7 +34,14 @@ export function useBoardRealtime(board, snapshot, callbacks) {
       engine.attach(socket);
       socket.onmessage = (event) => {
         try {
-          engine.receive(JSON.parse(event.data));
+          const message = JSON.parse(event.data);
+          if (message.type === "module.disabled") {
+            stopped = true;
+            engine.receive({ type: "denied" });
+            handlers.current.onModuleDisabled?.();
+            return;
+          }
+          engine.receive(message);
           attempts = 0;
         } catch {
           ws.close();

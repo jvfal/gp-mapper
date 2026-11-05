@@ -42,7 +42,9 @@ function detectLanguage() {
 
 function updateDocument(language) {
   document.documentElement.lang = language;
-  document.title = i18n.t("mapper:page.title");
+  document.title = i18n.t("mapper:page.title", {
+    guild: document.getElementById("mapper-root")?.dataset.guildName || "Avalon Roads",
+  });
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute("content", i18n.t("mapper:page.description"));

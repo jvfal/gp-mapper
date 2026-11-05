@@ -1,14 +1,16 @@
 import copy
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from catalog.models import RoadMap
 from .models import Board, BoardAccess
+from .roles import GUILD_MASTER_GROUP
 
 
-@override_settings(STORAGES={
+@override_settings(DISCORD_GUILD_ID='', DISCORD_MEMBER_ROLE_ID='', STORAGES={
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 })
@@ -102,6 +104,51 @@ class BoardTests(TestCase):
         self.assertEqual(self.board.name, 'Renamed')
         self.assertEqual(self.client.post(reverse('board-list'), {'name': ' '}, content_type='application/json').status_code, 400)
 
+    def test_guild_master_manages_restricted_guild_maps_but_not_other_users_private_maps(self):
+        from .realtime import read_board
+
+        self.board.scope = Board.Scope.GUILD
+        self.board.guild_can_view = self.board.guild_can_edit = False
+        self.board.save()
+        private = Board.objects.create(owner=self.owner, name='Personal')
+        group = Group.objects.get(name=GUILD_MASTER_GROUP)
+        self.other.groups.add(group)
+        self.client.force_login(self.other)
+        listing = self.client.get(reverse('board-list')).json()
+        self.assertTrue(listing['user']['isGuildMaster'])
+        self.assertFalse(listing['user']['isStaff'])
+        self.assertEqual([row['id'] for row in listing['boards']], [str(self.board.pk)])
+        expected = {'canView': True, 'canEdit': True, 'canManage': True}
+        self.assertEqual(listing['boards'][0]['permissions'], expected)
+        self.assertFalse(listing['boards'][0]['isOwner'])
+        self.assertEqual(self.client.get(reverse('board-detail', args=[private.pk])).status_code, 404)
+        self.assertEqual(self.put().status_code, 200)
+        self.assertEqual(self.client.patch(self.url, {'name': 'GM renamed'}, content_type='application/json').status_code, 200)
+        access_url = reverse('board-access', args=[self.board.pk])
+        self.assertEqual(self.client.get(access_url).status_code, 200)
+        self.assertEqual(self.client.put(access_url, {
+            'scope': 'guild', 'guildCanView': False, 'guildCanEdit': False, 'users': [],
+        }, content_type='application/json').status_code, 200)
+        self.assertEqual(read_board(self.board.pk, self.client.session.session_key)['permissions'], expected)
+        self.board.refresh_from_db()
+        self.assertEqual(self.board.owner_id, self.owner.pk)
+
+    def test_removing_guild_master_takes_effect_on_existing_session(self):
+        from .realtime import AccessDenied, read_board
+
+        self.board.scope = Board.Scope.GUILD
+        self.board.guild_can_view = False
+        self.board.save()
+        group = Group.objects.get(name=GUILD_MASTER_GROUP)
+        self.other.groups.add(group)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        self.other.groups.remove(group)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertFalse(self.client.get(reverse('board-list')).json()['user']['isGuildMaster'])
+        with self.assertRaises(AccessDenied):
+            read_board(self.board.pk, self.client.session.session_key)
+
     def test_mutations_enforce_csrf(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.owner)
@@ -130,6 +177,7 @@ class BoardTests(TestCase):
         self.assertEqual(self.client.get(self.url).status_code, 401)
 
     def test_owner_can_select_members_and_revoke_access(self):
+        self.owner.guild_roles.create(name='Map creators', can_create_guild_maps=True)
         access_url = reverse('board-access', args=[self.board.pk])
         settings = {'scope': 'guild', 'guildCanView': False, 'guildCanEdit': False,
                     'users': [{'id': self.other.pk, 'canView': True, 'canEdit': False}]}

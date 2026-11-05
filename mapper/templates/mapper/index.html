@@ -11,7 +11,7 @@
     <script type="module" src="{% static 'mapper/mapper.js' %}"></script>
   </head>
   <body>
-    <div id="mapper-root" data-catalog-url="{% url 'map-catalog' %}" data-csrf-token="{{ csrf_token }}"></div>
+    <div id="mapper-root" data-catalog-url="{% url 'map-catalog' %}" data-csrf-token="{{ csrf_token }}" data-guild-name="{{ guild_name }}" data-guild-icon-url="{{ guild_icon_url }}"></div>
     <noscript>{{ mapper_page.noScript }}</noscript>
   </body>
 </html>

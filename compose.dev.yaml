@@ -1,0 +1,36 @@
+# Local development: use workspace files and reload Python changes automatically.
+services:
+  notifications:
+    volumes:
+      - ./catalog:/app/catalog:ro
+      - ./mapper:/app/mapper:ro
+      - ./config:/app/config:ro
+      - ./manage.py:/app/manage.py:ro
+  web:
+    environment:
+      DJANGO_DEBUG: "True"
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - ./catalog:/app/catalog:ro
+      - ./mapper:/app/mapper:ro
+      - ./config:/app/config:ro
+      - ./docker:/app/docker:ro
+      - ./static:/app/static:ro
+      - ./frontend/src/locales:/app/frontend/src/locales:ro
+      - ./maps.json:/app/maps.json:ro
+      - ./manage.py:/app/manage.py:ro
+    command:
+      - uvicorn
+      - config.asgi:application
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --no-proxy-headers
+      - --reload
+      - --reload-dir
+      - /app/mapper
+      - --reload-dir
+      - /app/catalog
+      - --reload-dir
+      - /app/config

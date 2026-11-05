@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FeatureChip } from "./MapElements";
 import { Icon } from "./icons";
 import { matchesMapName } from "./graph";
+import { guildName } from "./Brand";
 export function CatalogDrawer({ catalog, nodes, addMap, close }) {
   const { t } = useTranslation("mapper");
   const [query, setQuery] = useState("");
@@ -15,7 +16,7 @@ export function CatalogDrawer({ catalog, nodes, addMap, close }) {
     <aside className="map-drawer" aria-label={t("catalog.title")}>
       <div className="drawer-heading">
         <div>
-          <span className="eyebrow">AVALON ROADS</span>
+          <span className="eyebrow">{guildName()}</span>
           <h2>{t("catalog.title")}</h2>
         </div>
         <button

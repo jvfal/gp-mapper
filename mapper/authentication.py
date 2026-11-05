@@ -16,13 +16,20 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.debug import sensitive_variables
 
-from .models import DiscordAccount
+from .models import DiscordAccount, GuildRole
+from .roles import guild_permissions, is_guild_master, membership_required, site_access
+from .modules import module_states
+from .branding import branding_info
 
 SESSION_KEY = 'discord_oauth_attempts'
 
 
 def discord_enabled():
-    return bool(settings.DISCORD_CLIENT_ID and settings.DISCORD_CLIENT_SECRET and settings.DISCORD_REDIRECT_URI)
+    configured = not membership_required() or all(
+        re.fullmatch(r'[0-9]{1,20}', value)
+        for value in (settings.DISCORD_GUILD_ID, settings.DISCORD_MEMBER_ROLE_ID)
+    )
+    return bool(configured and settings.DISCORD_CLIENT_ID and settings.DISCORD_CLIENT_SECRET and settings.DISCORD_REDIRECT_URI)
 
 
 def display_name(user):
@@ -38,8 +45,20 @@ def session_info(request):
         avatar = None
         if account and account.avatar:
             avatar = f'https://cdn.discordapp.com/avatars/{account.discord_id}/{account.avatar}.png?size=64'
-        info = {'id': user.pk, 'name': display_name(user), 'isStaff': user.is_staff, 'avatarUrl': avatar}
-    return {'user': info, 'auth': {'discordEnabled': discord_enabled()}}
+        info = {
+            'id': user.pk, 'name': display_name(user), 'isStaff': user.is_staff,
+            'isGuildMaster': is_guild_master(user), 'avatarUrl': avatar,
+            'canAccess': site_access(user), 'permissions': guild_permissions(user),
+            'approvalPending': bool(account and user.is_active and not site_access(user)),
+        }
+    return {'user': info, 'auth': {'discordEnabled': discord_enabled()}, 'modules': module_states(), 'branding': branding_info()}
+
+
+@never_cache
+@require_GET
+def current_session(request):
+    from django.http import JsonResponse
+    return JsonResponse(session_info(request))
 
 
 def safe_next(request, value):
@@ -57,7 +76,7 @@ def auth_error(reason):
 @never_cache
 @require_GET
 def discord_start(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and site_access(request.user):
         return redirect(safe_next(request, request.GET.get('next')))
     if not discord_enabled():
         return auth_error('unavailable')
@@ -72,7 +91,9 @@ def discord_start(request):
     request.session[SESSION_KEY] = attempts
     return redirect('https://discord.com/oauth2/authorize?' + urlencode({
         'client_id': settings.DISCORD_CLIENT_ID, 'redirect_uri': settings.DISCORD_REDIRECT_URI,
-        'response_type': 'code', 'scope': 'identify email', 'state': state,
+        'response_type': 'code',
+        'scope': 'identify email guilds.members.read' if membership_required() else 'identify email',
+        'state': state,
     }))
 
 
@@ -96,9 +117,26 @@ def discord_profile(code):
     access_token = token.get('access_token')
     if not isinstance(access_token, str) or not access_token:
         raise ValueError('missing_access_token')
-    return discord_json(Request('https://discord.com/api/v10/users/@me', headers={
+    headers = {
         'Authorization': f'Bearer {access_token}', 'User-Agent': 'AvalonRoadsMapper/1.0',
-    }))
+    }
+    profile = discord_json(Request('https://discord.com/api/v10/users/@me', headers=headers))
+    if membership_required():
+        try:
+            member = discord_json(Request(
+                f'https://discord.com/api/v10/users/@me/guilds/{settings.DISCORD_GUILD_ID}/member',
+                headers=headers,
+            ))
+        except HTTPError as error:
+            if error.code != 404:
+                raise
+            member = {}
+        roles = member.get('roles', [])
+        if not isinstance(roles, list) or any(not isinstance(role, str) for role in roles):
+            raise ValueError('invalid_discord_roles')
+        profile['_guild_member'] = settings.DISCORD_MEMBER_ROLE_ID in roles and not member.get('pending', False)
+        profile['_guild_role_ids'] = [] if member.get('pending', False) else roles
+    return profile
 
 
 def discord_user(profile):
@@ -126,14 +164,31 @@ def discord_user(profile):
                     first_name=name[:150], password=None,
                 )
                 account = DiscordAccount.objects.create(user=user, discord_id=discord_id, username=username, display_name=name[:100], avatar=avatar)
+                if membership_required() and profile.get('_guild_member') is not True:
+                    # A new pending account receives its initial role only after approval.
+                    user.guild_roles.clear()
     except IntegrityError:
         # Two first-time callbacks for the same Discord ID can arrive together.
         account = DiscordAccount.objects.select_related('user').get(discord_id=discord_id)
     user = account.user
     if not user.is_active:
         return None
+    if not membership_required() or profile.get('_guild_member') is True:
+        first_membership = not account.is_member or account.guild_id != settings.DISCORD_GUILD_ID
+        if first_membership and not user.guild_roles.exists():
+            role = GuildRole.objects.filter(is_default=True).first()
+            if role:
+                role.members.add(user)
+    account.is_member = not membership_required() or profile.get('_guild_member') is True
+    account.guild_id = settings.DISCORD_GUILD_ID
     account.username, account.display_name, account.avatar = username, name[:100], avatar
-    account.save(update_fields=['username', 'display_name', 'avatar', 'updated_at'])
+    account.save(update_fields=['username', 'display_name', 'avatar', 'guild_id', 'is_member', 'updated_at'])
+    if membership_required() and '_guild_role_ids' in profile:
+        automatic_roles = GuildRole.objects.filter(
+            discord_role_id__in=profile['_guild_role_ids'],
+        ).exclude(discord_role_id='') if site_access(user) else GuildRole.objects.none()
+        # Only replace Discord assignments; manual assignments remain intact.
+        user.discord_guild_roles.set(automatic_roles)
     user.first_name, user.email = name[:150], email
     user.save(update_fields=['first_name', 'email'])
     return user
@@ -161,6 +216,8 @@ def discord_callback(request):
     if user is None:
         return auth_error('inactive')
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    if not site_access(user):
+        return redirect('/')
     return redirect(safe_next(request, attempt['next']))
 
 

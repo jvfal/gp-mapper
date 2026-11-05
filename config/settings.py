@@ -41,6 +41,11 @@ BOOTSTRAP_SUPERUSER_EMAIL = env('DJANGO_SUPERUSER_EMAIL', default='dev@dev.com')
 DISCORD_CLIENT_ID = env('DISCORD_CLIENT_ID', default='')
 DISCORD_CLIENT_SECRET = env('DISCORD_CLIENT_SECRET', default='')
 DISCORD_REDIRECT_URI = env('DISCORD_REDIRECT_URI', default='')
+DISCORD_BOT_TOKEN = env('DISCORD_BOT_TOKEN', default='').strip()
+DISCORD_CORPORATE_CA_COMPAT = env.bool('DISCORD_CORPORATE_CA_COMPAT', default=False)
+GUILD_NAME = env('GUILD_NAME', default='Avalon Roads')
+DISCORD_GUILD_ID = env('DISCORD_GUILD_ID', default='')
+DISCORD_MEMBER_ROLE_ID = env('DISCORD_MEMBER_ROLE_ID', default='')
 
 
 # Application definition

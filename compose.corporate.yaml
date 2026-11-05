@@ -1,12 +1,24 @@
 # Optional build configuration for Windows hosts behind HTTPS inspection.
 services:
   web:
+    environment:
+      SSL_CERT_FILE: /run/certs/windows-ca.pem
+      DISCORD_CORPORATE_CA_COMPAT: "True"
+    volumes:
+      - ./.certs/windows-ca.pem:/run/certs/windows-ca.pem:ro
     build:
       context: .
       secrets:
         - pip_ca
         - pip_config
         - npm_config
+
+  notifications:
+    environment:
+      SSL_CERT_FILE: /run/certs/windows-ca.pem
+      DISCORD_CORPORATE_CA_COMPAT: "True"
+    volumes:
+      - ./.certs/windows-ca.pem:/run/certs/windows-ca.pem:ro
 
 secrets:
   pip_ca:

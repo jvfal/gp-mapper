@@ -17,6 +17,8 @@ from .models import Board, BoardAccess, BoardConnection, BoardNode
 from .permissions import permissions, visible_boards
 from .broadcast import publish_board
 from .authentication import display_name, session_info
+from .roles import guild_permissions, site_access
+from .modules import mapper_enabled
 
 
 def summary(board, user):
@@ -25,6 +27,7 @@ def summary(board, user):
     return {
         'id': str(board.pk), 'name': board.name, 'revision': board.revision,
         'scope': board.scope, 'permissions': permissions(board, user),
+        'isOwner': board.owner_id == user.pk,
         'updatedAt': board.updated_at.isoformat(),
         'nodeCount': board.nodes.count() if node_count is None else node_count,
         'connectionCount': board.connections.count() if connection_count is None else connection_count,
@@ -149,8 +152,10 @@ def replace_state(board, validated):
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def boards(request):
-    if not request.user.is_authenticated:
+    if not site_access(request.user):
         return JsonResponse({**session_info(request), 'boards': []}) if request.method == 'GET' else JsonResponse({'error': 'authentication_required'}, status=401)
+    if not mapper_enabled(request.user):
+        return JsonResponse({'error': 'module_disabled'}, status=403)
     if request.method == 'GET':
         queryset = visible_boards(request.user).annotate(node_count=Count('nodes', distinct=True), connection_count=Count('connections', distinct=True))
         return JsonResponse({**session_info(request),
@@ -161,6 +166,8 @@ def boards(request):
         scope = data.get('scope', Board.Scope.PRIVATE)
         if scope not in Board.Scope.values:
             raise ValueError('invalid_scope')
+        if scope == Board.Scope.GUILD and not guild_permissions(request.user)['canCreateGuildMaps']:
+            return JsonResponse({'error': 'guild_creation_denied'}, status=403)
     except ValueError as error:
         return JsonResponse({'error': str(error)}, status=400)
     with transaction.atomic():
@@ -171,7 +178,7 @@ def boards(request):
 @never_cache
 @require_http_methods(['GET', 'PUT', 'PATCH'])
 def board_detail(request, board_id):
-    if not request.user.is_authenticated:
+    if not site_access(request.user):
         return JsonResponse({'error': 'authentication_required'}, status=401)
     # Lock both reads and writes so state and revision are always a single snapshot.
     with transaction.atomic():
@@ -200,10 +207,11 @@ def board_detail(request, board_id):
         return JsonResponse({'board': summary(board, request.user)})
 
 
-def access_settings(board):
+def access_settings(board, user):
     grants = {grant.user_id: grant for grant in board.access_grants.all()}
     return {
         'scope': board.scope, 'guildCanView': board.guild_can_view, 'guildCanEdit': board.guild_can_edit,
+        'canCreateGuildMaps': guild_permissions(user)['canCreateGuildMaps'],
         'users': [{'id': user.pk, 'name': display_name(user),
                    'canView': bool(grants.get(user.pk) and grants[user.pk].can_view),
                    'canEdit': bool(grants.get(user.pk) and grants[user.pk].can_edit)}
@@ -214,16 +222,20 @@ def access_settings(board):
 @never_cache
 @require_http_methods(['GET', 'PUT'])
 def board_access(request, board_id):
-    if not request.user.is_authenticated:
+    if not site_access(request.user):
         return JsonResponse({'error': 'authentication_required'}, status=401)
     with transaction.atomic():
-        board = get_object_or_404(Board.objects.select_for_update(), pk=board_id, owner=request.user)
+        board = get_object_or_404(Board.objects.select_for_update(), pk=board_id)
+        if not permissions(board, request.user)['canManage']:
+            raise Http404
         if request.method == 'PUT':
             try:
                 data = body(request)
                 scope, guild_view, guild_edit = data.get('scope'), data.get('guildCanView'), data.get('guildCanEdit')
                 if scope not in Board.Scope.values or type(guild_view) is not bool or type(guild_edit) is not bool or guild_edit and not guild_view:
                     raise ValueError('invalid_access')
+                if scope == Board.Scope.GUILD and board.scope != Board.Scope.GUILD and not guild_permissions(request.user)['canCreateGuildMaps']:
+                    return JsonResponse({'error': 'guild_creation_denied'}, status=403)
                 grants = data.get('users')
                 if not isinstance(grants, list) or len(grants) > 5000:
                     raise ValueError('invalid_access')
@@ -247,4 +259,4 @@ def board_access(request, board_id):
             if scope == Board.Scope.GUILD:
                 BoardAccess.objects.bulk_create(clean)
             publish_board(board.pk)
-        return JsonResponse({'access': access_settings(board), 'board': summary(board, request.user)})
+        return JsonResponse({'access': access_settings(board, request.user), 'board': summary(board, request.user)})

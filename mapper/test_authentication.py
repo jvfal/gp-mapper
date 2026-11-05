@@ -3,6 +3,7 @@ from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -11,6 +12,7 @@ from .models import DiscordAccount
 
 
 @override_settings(
+    DISCORD_GUILD_ID='', DISCORD_MEMBER_ROLE_ID='',
     DISCORD_CLIENT_ID='test-client', DISCORD_CLIENT_SECRET='test-secret',
     DISCORD_REDIRECT_URI='https://testserver/auth/discord/callback/',
     BOOTSTRAP_SUPERUSER=True, BOOTSTRAP_SUPERUSER_USERNAME='dev',
@@ -65,9 +67,11 @@ class AuthenticationTests(TestCase):
         info = self.client.get(reverse('board-list')).json()
         self.assertEqual(info['user']['name'], 'Roads Player')
         self.assertFalse(info['user']['isStaff'])
+        self.assertFalse(info['user']['isGuildMaster'])
         self.assertEqual(self.client.get(reverse('mapper-logout')).status_code, 405)
         self.client.post(reverse('mapper-logout'))
         self.assertNotIn('_auth_user_id', self.client.session)
+        user.groups.add(Group.objects.get(name='Guild Master'))
         state = self.start('https://untrusted.invalid/steal')
         profile.return_value = {**self.profile, 'global_name': 'New Name'}
         response = self.client.get(reverse('discord-callback'), {'state': state, 'code': 'new-code'})
@@ -75,6 +79,7 @@ class AuthenticationTests(TestCase):
         self.assertEqual(DiscordAccount.objects.count(), 1)
         self.assertEqual(str(user.pk), self.client.session['_auth_user_id'])
         self.assertEqual(self.client.get(reverse('board-list')).json()['user']['name'], 'New Name')
+        self.assertTrue(self.client.get(reverse('board-list')).json()['user']['isGuildMaster'])
 
     @patch('mapper.authentication.discord_profile')
     def test_state_is_required_expires_and_cannot_be_replayed(self, profile):

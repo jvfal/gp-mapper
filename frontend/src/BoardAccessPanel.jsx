@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { boardApi } from "./boardApi";
 import { Icon } from "./icons";
+import { guildName } from "./Brand";
 
 export function BoardAccessPanel({ boardId, onClose, onSaved }) {
   const { t } = useTranslation("mapper");
@@ -64,7 +65,7 @@ export function BoardAccessPanel({ boardId, onClose, onSaved }) {
       <form onSubmit={submit}>
         <div className="access-heading">
           <div>
-            <span className="eyebrow">AVALON ROADS</span>
+            <span className="eyebrow">{guildName()}</span>
             <h2 id="access-title">{t("sharing.title")}</h2>
           </div>
           <button
@@ -94,7 +95,7 @@ export function BoardAccessPanel({ boardId, onClose, onSaved }) {
                 }
               >
                 <option value="private">{t("sharing.private")}</option>
-                <option value="guild">{t("sharing.guild")}</option>
+                <option value="guild" disabled={!settings.canCreateGuildMaps && settings.scope !== "guild"}>{t("sharing.guild")}</option>
               </select>
             </label>
             {settings.scope === "guild" && (

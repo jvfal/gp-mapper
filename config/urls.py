@@ -20,9 +20,22 @@ from django.urls import path
 from catalog.views import map_catalog
 from mapper.views import index
 from mapper.boards import boards, board_detail, board_access
-from mapper.authentication import discord_start, discord_callback, sign_out
+from mapper.authentication import discord_start, discord_callback, sign_out, current_session
+from mapper.configuration import configuration, configure_mapper
+from mapper.branding import configure_branding, guild_icon
+from mapper.members import members, roles, member_roles, member_approval
 
 urlpatterns = [
+    path('api/settings/branding/', configure_branding, name='configure-branding'),
+    path('assets/guild-icon/<str:digest>.png', guild_icon, name='guild-icon'),
+    path('api/session/', current_session, name='current-session'),
+    path('api/settings/', configuration, name='guild-settings'),
+    path('api/settings/modules/mapper/', configure_mapper, name='configure-mapper'),
+    path('api/members/', members, name='guild-members'),
+    path('api/members/<int:user_id>/roles/', member_roles, name='member-roles'),
+    path('api/members/<int:user_id>/approval/', member_approval, name='member-approval'),
+    path('api/roles/', roles, name='guild-roles'),
+    path('api/roles/<int:role_id>/', roles, name='guild-role-detail'),
     path('', index, name='mapper'),
     path('auth/discord/login/', discord_start, name='discord-login'),
     path('auth/discord/callback/', discord_callback, name='discord-callback'),

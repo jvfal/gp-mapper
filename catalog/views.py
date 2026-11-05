@@ -3,6 +3,8 @@ from django.templatetags.static import static
 from django.views.decorators.http import require_GET
 
 from .models import RoadMap
+from mapper.roles import site_access
+from mapper.modules import mapper_enabled
 
 
 def serialize_features(features, type_field):
@@ -21,6 +23,10 @@ def serialize_features(features, type_field):
 
 @require_GET
 def map_catalog(request):
+    if not site_access(request.user):
+        return JsonResponse({'error': 'permission_denied'}, status=403)
+    if not mapper_enabled(request.user):
+        return JsonResponse({'error': 'module_disabled'}, status=403)
     maps = RoadMap.objects.prefetch_related('resources', 'chests', 'dungeons')
     return JsonResponse({'maps': [
         {

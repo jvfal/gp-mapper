@@ -12,7 +12,7 @@ from catalog.models import RoadMap
 from .models import Board, BoardAccess
 
 
-@override_settings(CHANNEL_LAYERS={'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}},
+@override_settings(DISCORD_GUILD_ID='', DISCORD_MEMBER_ROLE_ID='', CHANNEL_LAYERS={'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}},
                    ALLOWED_HOSTS=['localhost', '127.0.0.1'])
 class RealtimeTests(TransactionTestCase):
     def setUp(self):

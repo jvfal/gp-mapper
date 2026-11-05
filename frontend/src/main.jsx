@@ -25,6 +25,7 @@ import "@xyflow/react/dist/style.css";
 import "./styles.css";
 import { BoardAccessPanel } from "./BoardAccessPanel";
 import { AccountMenu } from "./AccountMenu";
+import { Brand, guildName } from "./Brand";
 import { BoardLibrary, BoardName } from "./BoardLibrary";
 import { useBoardRealtime } from "./useBoardRealtime";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -55,7 +56,7 @@ const initialViewport = {
   y: 0,
   zoom: 1,
 };
-function App({ board, user, onBack, onReload }) {
+function App({ board, user, onBack, onReload, iconUrl }) {
   const { t } = useTranslation("mapper");
   const [boardMetadata, setBoardMetadata] = useState(board);
   const [showAccess, setShowAccess] = useState(false);
@@ -110,6 +111,7 @@ function App({ board, user, onBack, onReload }) {
     flush,
   } = useBoardRealtime(board, snapshot, {
     onMetadata: setBoardMetadata,
+    onModuleDisabled: () => onBack(),
     onRemote: (graph) => {
         setNow(Date.now());
       const restored = restoreBoard(
@@ -520,22 +522,13 @@ function App({ board, user, onBack, onReload }) {
       <EdgeContext.Provider value={edgeContext}>
         <div className="app-shell">
           <header className="app-header">
-            <a href="/" className="brand" aria-label={t("page.home")}>
-              <span className="brand-mark">
-                <Icon name="compass" size={25} />
-              </span>
-              <span>
-                AVALON<span className="brand-roads">ROADS</span>
-              </span>
-              <span className="brand-divider" />
-              <span className="brand-product">Mapper</span>
-            </a>
+            <Brand iconUrl={iconUrl} onMaps={leaveBoard} onMembers={user.permissions?.canManageMembers ? async () => {
+              try { await flush(); onBack("members"); }
+              catch { setNotice({ key: "library.leaveError", kind: "error" }); }
+            } : undefined} />
             <div className="header-right">
               <LanguageSwitcher />
               <AccountMenu user={user} />
-              <button className="text-button" onClick={leaveBoard}>
-                {t("library.back")}
-              </button>
               <span className="draft-badge">
                 <span />
                 {t(
@@ -544,10 +537,13 @@ function App({ board, user, onBack, onReload }) {
                     : "sharing.private",
                 )}
               </span>
-              {user.isStaff && <a className="admin-link" href="/admin/" title={t("page.admin")}>
-                Admin
+              {user.permissions?.canManageSettings && <button className="admin-link settings-link" onClick={async () => {
+                try { await flush(); onBack("settings"); }
+                catch { setNotice({ key: "library.leaveError", kind: "error" }); }
+              }}>
+                {t("modules.title")}
                 <Icon name="arrow" size={15} />
-              </a>}
+              </button>}
             </div>
           </header>
 
@@ -1018,7 +1014,7 @@ function App({ board, user, onBack, onReload }) {
               </div>
             </section>
             <footer className="page-footer">
-              <span>AVALON ROADS MAPPER</span>
+              <span>{guildName()} · {t("page.product")}</span>
               <span>
                 {t(
                   boardMetadata.scope === "guild"

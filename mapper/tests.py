@@ -1,4 +1,5 @@
 from django.test import TestCase, override_settings
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from catalog.models import MapChest, MapDungeon, MapResource, RoadMap
@@ -11,14 +12,18 @@ from catalog.models import MapChest, MapDungeon, MapResource, RoadMap
 class MapperTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_superuser(username='mapper-admin', password=None)
         for index, name in [(1, 'Cases-Ugumlos'), (2, 'Casitos-Alieam')]:
             roadmap = RoadMap.objects.create(id=index, name=name, tier=6, image='Cases-Ugumlos_T_6.png')
             MapResource.objects.create(road_map=roadmap, resource_type='ORE', size='small', count=2)
             MapChest.objects.create(road_map=roadmap, chest_type='BLUE', size='large', count=1)
             MapDungeon.objects.create(road_map=roadmap, dungeon_type='DUNGEON_SOLO', size='small', count=1)
 
-    def test_catalog_uses_four_queries_and_serializes_all_feature_types(self):
-        with self.assertNumQueries(4):
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_catalog_uses_seven_queries_and_serializes_all_feature_types(self):
+        with self.assertNumQueries(7):
             response = self.client.get(reverse('map-catalog'))
         self.assertEqual(response.status_code, 200)
         maps = response.json()['maps']
