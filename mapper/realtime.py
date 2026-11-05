@@ -10,7 +10,8 @@ from django.db import transaction
 
 from .boards import number, state, summary, validate_state
 from .broadcast import publish_board
-from .models import Board, BoardConnection, BoardMutation, BoardNode
+from .models import Board, BoardMutation
+from .graph_storage import persist_graph
 from .permissions import permissions
 
 
@@ -31,7 +32,7 @@ def locked_board(board_id, user):
     try:
         board = Board.objects.select_for_update().get(pk=board_id)
     except Board.DoesNotExist:
-        raise AccessDenied('permission_denied')
+        raise AccessDenied('board_deleted')
     if not permissions(board, user)['canView']:
         raise AccessDenied('permission_denied')
     return board
@@ -96,29 +97,10 @@ def apply_operations(current, operations):
     return {**current, 'nodes': list(nodes.values()), 'edges': list(edges.values())}
 
 
-def save_delta(board, before, validated):
+def save_delta(board, validated, user):
     nodes, edges, _ = validated
-    old_nodes = {node['mapId']: (node['position']['x'], node['position']['y']) for node in before['nodes']}
-    new_nodes = {map_id: (x, y) for map_id, x, y in nodes}
-    old_edges = {edge['id']: (edge['source'], edge['target'], edge['sourceHandle'], edge['targetHandle'], edge['expiresAt']) for edge in before['edges']}
-    new_edges = {key: (f'map-{source}', f'map-{target}', sh, th, round(expiry.timestamp() * 1000))
-                 for key, source, target, sh, th, expiry in edges}
-    if old_nodes == new_nodes and old_edges == new_edges:
+    if not persist_graph(board, nodes, edges, user):
         return False
-    changed_edges = {key for key in old_edges.keys() | new_edges.keys() if old_edges.get(key) != new_edges.get(key)}
-    board.connections.filter(client_id__in=changed_edges).delete()
-    board.nodes.filter(road_map_id__in=old_nodes.keys() - new_nodes.keys()).delete()
-    BoardNode.objects.bulk_create([
-        BoardNode(board=board, road_map_id=key, x=xy[0], y=xy[1])
-        for key, xy in new_nodes.items() if old_nodes.get(key) != xy
-    ], update_conflicts=True, update_fields=['x', 'y'], unique_fields=['board', 'road_map'])
-    if changed_edges:
-        by_map = {node.road_map_id: node for node in board.nodes.all()}
-        BoardConnection.objects.bulk_create([
-            BoardConnection(board=board, client_id=key, source=by_map[source], target=by_map[target],
-                            source_handle=sh, target_handle=th, expires_at=expiry)
-            for key, source, target, sh, th, expiry in edges if key in changed_edges
-        ])
     board.revision += 1
     board.save(update_fields=['revision', 'updated_at'])
     return True
@@ -137,7 +119,7 @@ def mutate_board(board_id, session_key, mutation_id, operations):
         if not BoardMutation.objects.filter(board=board, mutation_id=mutation_id).exists():
             current = state(board)
             candidate = apply_operations(current, operations)
-            changed = save_delta(board, current, validate_state(candidate))
+            changed = save_delta(board, validate_state(candidate), user)
             BoardMutation.objects.create(board=board, mutation_id=mutation_id)
             if changed:
                 publish_board(board.pk)

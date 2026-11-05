@@ -17,8 +17,8 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_add(self.group, self.channel_name)
             await self.channel_layer.group_add('module.mapper', self.channel_name)
             board = await database_sync_to_async(read_board)(self.board_id, self.session_key)
-        except AccessDenied:
-            await self.close(code=4403)
+        except AccessDenied as error:
+            await self.close(code=4404 if str(error) == 'board_deleted' else 4403)
             return
         await self.accept()
         await self.send_json({'type': 'snapshot', 'board': board})
@@ -31,6 +31,10 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
     async def module_disabled(self, event):
         await self.send_json({'type': 'module.disabled'})
         await self.close(code=4403)
+
+    async def board_deleted(self, event):
+        await self.send_json({'type': 'board.deleted'})
+        await self.close(code=4404)
 
     async def receive(self, text_data=None, bytes_data=None, **kwargs):
         if text_data is None or len(text_data) > 1_000_000:
@@ -52,8 +56,8 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
                 board = await database_sync_to_async(mutate_board)(
                     self.board_id, self.session_key, content.get('mutationId'), content.get('operations'))
                 await self.send_json({'type': 'snapshot', 'board': board, 'ack': content.get('mutationId')})
-            except AccessDenied:
-                await self.deny()
+            except AccessDenied as error:
+                await self.deny(error)
             except ValueError as error:
                 await self.send_json({'type': 'error', 'error': str(error), 'mutationId': content.get('mutationId')})
         else:
@@ -63,9 +67,12 @@ class BoardConsumer(AsyncJsonWebsocketConsumer):
         try:
             board = await database_sync_to_async(read_board)(self.board_id, self.session_key)
             await self.send_json({'type': 'snapshot', 'board': board})
-        except AccessDenied:
-            await self.deny()
+        except AccessDenied as error:
+            await self.deny(error)
 
-    async def deny(self):
+    async def deny(self, error=None):
+        if str(error) == 'board_deleted':
+            await self.board_deleted({})
+            return
         await self.send_json({'type': 'denied'})
         await self.close(code=4403)

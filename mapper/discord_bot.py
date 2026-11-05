@@ -25,10 +25,11 @@ def retry_delay(value):
 
 
 @sensitive_variables()
-def discord_request(path, payload=None):
+def discord_request(path, payload=None, *, method=None):
     request = Request(
         'https://discord.com/api/v10' + path,
         data=json.dumps(payload).encode('utf-8') if payload is not None else None,
+        method=method,
         headers={
             'Authorization': 'Bot ' + settings.DISCORD_BOT_TOKEN,
             'Content-Type': 'application/json',
@@ -41,7 +42,7 @@ def discord_request(path, payload=None):
         context.verify_flags &= ~ssl.VERIFY_X509_STRICT
     try:
         with urlopen(request, timeout=10, context=context) as response:
-            result = json.load(response)
+            result = None if response.status == 204 else json.load(response)
             # Proactively respect successful responses that exhaust the bucket.
             delay = retry_delay(response.headers.get('X-RateLimit-Reset-After')) if response.headers.get('X-RateLimit-Remaining') == '0' else 0
             return result, delay

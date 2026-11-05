@@ -4,10 +4,18 @@ import { apiRequest } from "./boardApi";
 import { Switch } from "./Switch";
 import { Icon } from "./icons";
 
-const emptyRole = { name: "", discordRoleId: "", canViewGuildMaps: true, canCreateGuildMaps: false };
+const emptyRole = { name: "", discordRoleId: "", canViewGuildMaps: true, canCreateGuildMaps: false, canDeleteGuildMaps: false };
+
+function MemberAvatar({ member }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [member.avatarUrl]);
+  return <span className="member-avatar" aria-hidden="true">
+    {member.avatarUrl && !broken ? <img src={member.avatarUrl} alt="" width="40" height="40" loading="lazy" onError={() => setBroken(true)} /> : member.name.slice(0, 1).toLocaleUpperCase()}
+  </span>;
+}
 
 export function MembersPage() {
-  const { t } = useTranslation("mapper");
+  const { t, i18n } = useTranslation("mapper");
   const rolesDialog = useRef(null);
   const [data, setData] = useState(null);
   const [query, setQuery] = useState("");
@@ -32,7 +40,10 @@ export function MembersPage() {
     if (busy) return;
     setBusy(true); setError(""); setSaved(false);
     try { await action(); await load(); setSaved(true); }
-    catch (error) { setError(error.code === "duplicate_role" ? "members.duplicate" : error.code === "invalid_discord_role_id" ? "members.invalidDiscordRole" : "members.error"); }
+    catch (error) {
+      const messages = { duplicate_role: "members.duplicate", invalid_discord_role_id: "members.invalidDiscordRole", invalid_guild: "members.wrongGuild", guild_not_configured: "members.guildNotConfigured" };
+      setError(messages[error.code] || "members.error");
+    }
     finally { setBusy(false); }
   }
 
@@ -53,8 +64,9 @@ export function MembersPage() {
             <input inputMode="numeric" pattern="[0-9]{1,20}" maxLength={20} placeholder={t("members.discordRolePlaceholder")} disabled={busy} value={role.discordRoleId || ""} onChange={(event) => setRole({ ...role, discordRoleId: event.target.value })} />
           </label>
           <p className="muted">{t("members.discordRoleHint")}</p>
-          <Switch disabled={busy} checked={role.canViewGuildMaps} onChange={(event) => setRole({ ...role, canViewGuildMaps: event.target.checked, ...(!event.target.checked ? { canCreateGuildMaps: false } : {}) })} label={t("members.viewMaps")} />
+          <Switch disabled={busy} checked={role.canViewGuildMaps} onChange={(event) => setRole({ ...role, canViewGuildMaps: event.target.checked, ...(!event.target.checked ? { canCreateGuildMaps: false, canDeleteGuildMaps: false } : {}) })} label={t("members.viewMaps")} />
           <Switch disabled={busy} checked={role.canCreateGuildMaps} onChange={(event) => setRole({ ...role, canCreateGuildMaps: event.target.checked, ...(event.target.checked ? { canViewGuildMaps: true } : {}) })} label={t("members.createMaps")} />
+          <Switch disabled={busy} checked={Boolean(role.canDeleteGuildMaps)} onChange={(event) => setRole({ ...role, canDeleteGuildMaps: event.target.checked, ...(event.target.checked ? { canViewGuildMaps: true } : {}) })} label={t("members.deleteMaps")} />
           <p className="muted">{t("members.mapPermissionsHint")}</p>
           <div className="role-actions">
             <button className="button primary" disabled={busy || !role.name.trim()}>{t("members.saveRole")}</button>
@@ -118,13 +130,27 @@ export function MembersPage() {
         <input className="members-search" aria-label={t("members.search")} placeholder={t("members.search")} value={query} onChange={(event) => setQuery(event.target.value)} />
           <button type="button" className="button members-roles-button" aria-haspopup="dialog" onClick={() => rolesDialog.current.showModal()}>{t("members.viewRoles")} <span className="muted">({data.roles.length})</span></button>
         </div>
-        {data.members.filter((member) => member.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())).map((member) => <article className="member-card" key={member.id}>
-          <div className="member-heading"><strong>{member.name}</strong>
+        {data.members.filter((member) => [member.name, member.discordUsername || '', member.discordId || ''].some((value) => value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))).map((member) => <article className="member-card" key={member.id}>
+          <div className="member-heading"><div className="member-identity"><MemberAvatar member={member} /><div>
+            <strong>{member.name}</strong>
+            <span className="member-discord-name" title={member.discordId ? `Discord ID: ${member.discordId}` : undefined}>{member.discordUsername ? `@${member.discordUsername}` : t('members.localAccount')}</span>
+          </div></div>
+            <div className="member-statuses">
             {member.isGuildMaster && <span className="member-badge">Guild Master</span>}
             {member.pendingApproval && <span className="member-badge">{t("members.pendingBadge")}</span>}
-            {member.manuallyApproved && <span className="member-badge">{t("members.manualBadge")}</span>}
+            {member.manuallyApproved && <div className="member-approval">
+              <span className="member-badge">{t("members.manualBadge")}</span>
+              {!member.isProtected && <button type="button" className="button member-revoke" disabled={busy} onClick={() => {
+                if (window.confirm(t("members.revokeConfirm", { name: member.name }))) save(() => apiRequest(`/api/members/${member.id}/approval/`, { method: "PUT", body: { approved: false } }));
+              }}>{t("members.revoke")}</button>}
+            </div>}
             {!member.isActive && <span className="muted">{t("members.inactive")}</span>}
+            </div>
           </div>
+          <dl className="member-details">
+            <div><dt>{t('members.joinedAt')}</dt><dd>{member.joinedAt ? <time dateTime={member.joinedAt} title={new Date(member.joinedAt).toLocaleString(i18n.resolvedLanguage)}>{new Date(member.joinedAt).toLocaleDateString(i18n.resolvedLanguage, { day: 'numeric', month: 'short', year: 'numeric' })}</time> : t('members.unknownDate')}</dd></div>
+            <div><dt>{t('members.lastLogin')}</dt><dd>{member.lastLoginAt ? <time dateTime={member.lastLoginAt}>{new Date(member.lastLoginAt).toLocaleString(i18n.resolvedLanguage, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time> : t('members.neverLoggedIn')}</dd></div>
+          </dl>
           {member.isProtected ? <p className="muted">{t("members.protected")}</p> : member.pendingApproval ? <>
             <p className="muted">{t("members.pendingMemberHint")}</p>
             <button className="button primary" disabled={busy} onClick={() => save(() => apiRequest(`/api/members/${member.id}/approval/`, { method: "PUT", body: { approved: true } }))}>{t("members.approve")}</button>
@@ -136,9 +162,6 @@ export function MembersPage() {
               }} label={<>{item.isDefault ? t("members.defaultRole") : item.name}
                 {member.automaticRoleIds?.includes(item.id) && <small className="automatic-role-source">Discord</small>}
               </>} />)}</div>
-            {member.manuallyApproved && <button className="text-button delete-role" disabled={busy} onClick={() => {
-              if (window.confirm(t("members.revokeConfirm", { name: member.name }))) save(() => apiRequest(`/api/members/${member.id}/approval/`, { method: "PUT", body: { approved: false } }));
-            }}>{t("members.revoke")}</button>}
           </>}
         </article>)}
       </section>

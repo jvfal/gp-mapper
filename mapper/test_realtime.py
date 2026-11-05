@@ -112,3 +112,23 @@ class RealtimeTests(TransactionTestCase):
                 await connection.send_input({'type': 'websocket.disconnect', 'code': 1000})
                 await connection.wait()
         async_to_sync(scenario)()
+
+    def test_deletion_notifies_people_with_the_board_open(self):
+        from .models import GuildRole
+        role, _ = GuildRole.objects.get_or_create(name='Member', defaults={'is_default': True})
+        self.owner.guild_roles.add(role)
+        self.viewer.guild_roles.add(role)
+
+        async def scenario():
+            connection = await self.connect(self.sessions[2])
+            try:
+                self.assertEqual((await connection.receive_output())['type'], 'websocket.accept')
+                await self.message(connection)
+                response = await database_sync_to_async(self.clients[0].delete)(f'/api/boards/{self.board.pk}/', HTTP_HOST='localhost')
+                self.assertEqual(response.status_code, 200)
+                await self.message(connection, lambda data: data.get('type') == 'board.deleted')
+                self.assertEqual((await connection.receive_output())['code'], 4404)
+            finally:
+                await connection.send_input({'type': 'websocket.disconnect', 'code': 1000})
+                await connection.wait()
+        async_to_sync(scenario)()

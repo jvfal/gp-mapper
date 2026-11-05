@@ -6,7 +6,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from catalog.models import RoadMap
-from .models import Board, BoardAccess
+from .models import Board, BoardAccess, GuildRole
 from .roles import GUILD_MASTER_GROUP
 
 
@@ -59,6 +59,10 @@ class BoardTests(TestCase):
         self.assertEqual(edge['expiresAt'], 1_900_000_000_000)
         listed = self.client.get(reverse('board-list')).json()['boards'][0]
         self.assertEqual((listed['nodeCount'], listed['connectionCount']), (2, 1))
+        self.assertEqual({node['name'] for node in listed['preview']['nodes']}, {'One', 'Two'})
+        self.assertEqual(listed['preview']['edges'][0]['expiresAt'], edge['expiresAt'])
+        self.assertEqual({listed['preview']['edges'][0]['source'], listed['preview']['edges'][0]['target']},
+                         {node['id'] for node in listed['preview']['nodes']})
 
     def test_stale_revision_never_overwrites_saved_board(self):
         self.assertEqual(self.put().status_code, 200)
@@ -67,6 +71,88 @@ class BoardTests(TestCase):
         changed['edges'] = []
         self.assertEqual(self.put(changed).status_code, 409)
         self.assertEqual(self.board.nodes.count(), 2)
+
+    def test_owner_can_delete_saved_graph_without_deleting_catalog(self):
+        from unittest.mock import patch
+        self.put()
+        self.assertTrue(self.client.get(self.url).json()['board']['canDelete'])
+        with patch('mapper.boards.publish_board') as publish:
+            response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, 200)
+        publish.assert_called_once_with(self.board.pk, event_type='board.deleted')
+        self.assertFalse(Board.objects.filter(pk=self.board.pk).exists())
+        self.assertEqual(RoadMap.objects.count(), 2)
+        self.assertFalse(self.board.nodes.exists())
+
+    def test_editor_needs_delete_role_and_existing_view_access(self):
+        self.board.scope = 'guild'
+        self.board.guild_can_edit = True
+        self.board.save(update_fields=['scope', 'guild_can_edit'])
+        self.client.force_login(self.other)
+        self.assertFalse(self.client.get(self.url).json()['board']['canDelete'])
+        self.assertEqual(self.client.delete(self.url).status_code, 403)
+        role = GuildRole.objects.create(name='Map cleanup', can_delete_guild_maps=True)
+        self.other.guild_roles.add(role)
+        self.assertTrue(self.client.get(self.url).json()['board']['canDelete'])
+        self.board.guild_can_view = self.board.guild_can_edit = False
+        self.board.save(update_fields=['guild_can_view', 'guild_can_edit'])
+        self.assertEqual(self.client.delete(self.url).status_code, 404)
+        BoardAccess.objects.create(board=self.board, user=self.other, can_view=True)
+        self.assertEqual(self.client.delete(self.url).status_code, 200)
+        private = Board.objects.create(owner=self.owner, name='Personal')
+        self.assertEqual(self.client.delete(reverse('board-detail', args=[private.pk])).status_code, 404)
+
+    def test_guild_master_can_delete_guild_boards_but_not_other_personal_boards(self):
+        private = Board.objects.create(owner=self.owner, name='Personal')
+        self.other.groups.add(Group.objects.get(name=GUILD_MASTER_GROUP))
+        self.client.force_login(self.other)
+        self.board.scope = 'guild'
+        self.board.guild_can_view = False
+        self.board.save(update_fields=['scope', 'guild_can_view'])
+        self.assertEqual(self.client.delete(self.url).status_code, 200)
+        self.assertEqual(self.client.delete(reverse('board-detail', args=[private.pk])).status_code, 404)
+
+    def test_attribution_is_server_owned_and_preserved_when_another_user_edits(self):
+        self.put()
+        original_node = self.board.nodes.get(road_map_id=1)
+        original_edge = self.board.connections.get()
+        self.board.scope = 'guild'
+        self.board.guild_can_edit = True
+        self.board.save(update_fields=['scope', 'guild_can_edit'])
+        self.client.force_login(self.other)
+        changed = copy.deepcopy(self.state)
+        changed['nodes'][0]['position']['x'] = 50
+        changed['nodes'][0]['audit'] = {'createdBy': 'fake', 'createdAt': '2000-01-01'}
+        changed['edges'][0]['expiresAt'] += 60_000
+        self.assertEqual(self.put(changed, revision=1).status_code, 200)
+        node = self.board.nodes.get(road_map_id=1)
+        edge = self.board.connections.get()
+        self.assertEqual((node.created_by, edge.created_by), (self.owner, self.owner))
+        self.assertEqual((node.created_at, edge.created_at), (original_node.created_at, original_edge.created_at))
+        self.assertEqual((node.updated_by, edge.updated_by), (self.other, self.other))
+        self.assertEqual(self.board.nodes.get(road_map_id=2).updated_by, self.owner)
+        state = self.client.get(self.url).json()['board']['state']
+        self.assertEqual(state['edges'][0]['audit']['createdBy'], 'owner')
+        self.assertEqual(state['edges'][0]['audit']['updatedBy'], 'other')
+        before = edge.updated_at
+        self.assertEqual(self.put(changed, revision=2).status_code, 200)
+        self.assertEqual(self.board.connections.get().updated_at, before)
+
+    def test_realtime_updates_attribution_without_changing_creator(self):
+        from uuid import uuid4
+        from .realtime import mutate_board
+        self.put()
+        self.board.scope = 'guild'
+        self.board.guild_can_edit = True
+        self.board.save(update_fields=['scope', 'guild_can_edit'])
+        self.client.force_login(self.other)
+        key = uuid4()
+        operations = [{'type': 'node.move', 'mapId': 1, 'position': {'x': 77, 'y': 55}}]
+        result = mutate_board(self.board.pk, self.client.session.session_key, key, operations)
+        audit = next(node for node in result['state']['nodes'] if node['mapId'] == 1)['audit']
+        self.assertEqual((audit['createdBy'], audit['updatedBy']), ('owner', 'other'))
+        retry = mutate_board(self.board.pk, self.client.session.session_key, key, operations)
+        self.assertEqual(retry['state']['nodes'], result['state']['nodes'])
 
     def test_invalid_states_are_rejected_without_changes(self):
         self.put()

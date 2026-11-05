@@ -80,6 +80,56 @@ class MemberRoleTests(TestCase):
 class DiscordMembershipTests(TestCase):
     profile = {'id': '123123123', 'username': 'player', 'global_name': 'Player'}
 
+    @patch('mapper.authentication.discord_profile')
+    def test_legacy_session_requests_discord_refresh_until_next_login(self, profile):
+        user = get_user_model().objects.create_user(username='legacy-status')
+        DiscordAccount.objects.create(user=user, discord_id=self.profile['id'], username='player', display_name='Player')
+        self.client.force_login(user)
+        info = self.client.get(reverse('current-session')).json()['user']
+        self.assertTrue(info['discordNeedsRefresh'])
+        self.assertTrue(info['discordLoginAvailable'])
+        profile.return_value = {**self.profile, '_guild_member': True}
+        state = self.start()
+        self.client.get(reverse('discord-callback'), {'code': 'again', 'state': state})
+        info = self.client.get(reverse('current-session')).json()['user']
+        self.assertFalse(info['discordNeedsRefresh'])
+        self.assertTrue(info['canAccess'])
+
+    def test_manual_approval_binds_legacy_account_and_revocation_blocks_access(self):
+        from django.test import Client
+        user = get_user_model().objects.create_user(username='legacy-player')
+        account = DiscordAccount.objects.create(user=user, discord_id='111222333', username='legacy', display_name='Legacy', is_member=True)
+        gm = get_user_model().objects.create_user(username='legacy-approver')
+        gm.groups.add(Group.objects.get(name='Guild Master'))
+        manager = Client()
+        manager.force_login(gm)
+        self.client.force_login(user)
+        self.assertTrue(self.client.get(reverse('current-session')).json()['user']['approvalPending'])
+        url = reverse('member-approval', args=[user.pk])
+        self.assertEqual(manager.put(url, {'approved': True}, content_type='application/json').status_code, 200)
+        account.refresh_from_db()
+        self.assertEqual(account.guild_id, '123456789')
+        self.assertEqual(account.approval_guild_id, '123456789')
+        self.assertFalse(account.is_member)
+        self.assertEqual(account.approved_by_id, gm.pk)
+        self.assertTrue(self.client.get(reverse('current-session')).json()['user']['canAccess'])
+        self.assertTrue(user.guild_roles.filter(is_default=True).exists())
+        self.assertEqual(manager.put(url, {'approved': False}, content_type='application/json').status_code, 200)
+        self.assertFalse(self.client.get(reverse('current-session')).json()['user']['canAccess'])
+
+    def test_approval_does_not_rebind_an_account_from_another_guild(self):
+        user = get_user_model().objects.create_user(username='other-guild-player')
+        account = DiscordAccount.objects.create(user=user, discord_id='999222333', username='other', display_name='Other', guild_id='another-guild')
+        gm = get_user_model().objects.create_user(username='guild-approver')
+        gm.groups.add(Group.objects.get(name='Guild Master'))
+        self.client.force_login(gm)
+        response = self.client.put(reverse('member-approval', args=[user.pk]), {'approved': True}, content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'invalid_guild')
+        account.refresh_from_db()
+        self.assertEqual(account.guild_id, 'another-guild')
+        self.assertFalse(account.manually_approved)
+
     def start(self):
         response = self.client.get(reverse('discord-login'))
         query = parse_qs(urlsplit(response.url).query)

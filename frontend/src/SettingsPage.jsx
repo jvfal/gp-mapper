@@ -8,9 +8,21 @@ import { Switch } from "./Switch";
 export function SettingsPage({ onChanged }) {
   const { t } = useTranslation("mapper");
   const [module, setModule] = useState(null);
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem('gp-mapper:mapper-settings') !== 'collapsed'; }
+    catch { return true; }
+  });
+  const optionsOpen = Boolean(module?.enabled && expanded);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [savedChannel, setSavedChannel] = useState('');
+  const [channelConfirm, setChannelConfirm] = useState(false);
+  const [channelError, setChannelError] = useState('');
+  const [channelConfigured, setChannelConfigured] = useState('');
+  const [channelTarget, setChannelTarget] = useState(null);
+  const channelDialog = useRef(null);
+  const cancelChannel = useRef(null);
   const [branding, setBranding] = useState(null);
   const [iconBlob, setIconBlob] = useState(null);
   const [iconPreview, setIconPreview] = useState("");
@@ -21,6 +33,13 @@ export function SettingsPage({ onChanged }) {
   const [pendingToggle, setPendingToggle] = useState(null);
   const toggleDialog = useRef(null);
   const cancelToggle = useRef(null);
+
+  useEffect(() => {
+    if (channelConfirm) {
+      channelDialog.current.showModal();
+      cancelChannel.current.focus();
+    } else if (channelDialog.current?.open) channelDialog.current.close();
+  }, [channelConfirm]);
 
   useEffect(() => {
     if (pendingToggle !== null) {
@@ -35,6 +54,7 @@ export function SettingsPage({ onChanged }) {
     const controller = new AbortController();
     apiRequest('/api/settings/', { signal: controller.signal }).then((result) => {
       setModule(result.modules.find((item) => item.code === 'mapper'));
+      setSavedChannel(result.modules.find((item) => item.code === 'mapper')?.settings.discordChannelId || '');
       setBranding(result.branding);
     }).catch((error) => {
       if (error.name !== 'AbortError') setError('modules.loadError');
@@ -47,7 +67,9 @@ export function SettingsPage({ onChanged }) {
     const interval = setInterval(() => {
       apiRequest('/api/settings/', { signal: controller.signal }).then((result) => {
         const current = result.modules.find((item) => item.code === 'mapper');
-        setModule((previous) => previous && current ? { ...previous, botStatus: current.botStatus, botAvailable: current.botAvailable } : previous);
+        setModule((previous) => previous && current ? { ...previous, botStatus: current.botStatus, botAvailable: current.botAvailable,
+          ...(previous.settings.discordChannelId === current.settings.discordChannelId ? { discordChannel: current.discordChannel } : {}),
+        } : previous);
       }).catch(() => {});
     }, 15000);
     return () => { clearInterval(interval); controller.abort(); };
@@ -90,8 +112,14 @@ export function SettingsPage({ onChanged }) {
     finally { setIconBusy(false); }
   }
 
+  function changeExpansion(value) {
+    setExpanded(value);
+    try { localStorage.setItem('gp-mapper:mapper-settings', value ? 'expanded' : 'collapsed'); }
+    catch { /* The accordion still works when storage is unavailable. */ }
+  }
   function changeSettings(changes) {
     setSaved(false);
+    if ('discordChannelId' in changes) { setChannelConfigured(''); setChannelError(''); }
     setModule((current) => ({ ...current, settings: { ...current.settings, ...changes } }));
   }
   async function toggleModule(enabled) {
@@ -101,6 +129,7 @@ export function SettingsPage({ onChanged }) {
     setModule((current) => ({ ...current, enabled }));
     try {
       await apiRequest('/api/settings/modules/mapper/', { method: 'PATCH', body: { enabled } });
+      if (enabled) changeExpansion(true);
       await onChanged();
     } catch {
       setModule((current) => ({ ...current, enabled: previous }));
@@ -114,6 +143,7 @@ export function SettingsPage({ onChanged }) {
     try {
       const result = await apiRequest('/api/settings/modules/mapper/', { method: 'PUT', body: module });
       setModule(result.module);
+      setSavedChannel(result.module.settings.discordChannelId);
       await onChanged();
       setSaved(true);
     } catch (error) {
@@ -121,7 +151,51 @@ export function SettingsPage({ onChanged }) {
     } finally { setBusy(false); }
   }
 
+  function channelFailure(error) {
+    const messages = { missing_permissions: 'modules.channelSetupPermissions', member_role_not_found: 'modules.memberRoleMissing', invalid_discord_configuration: 'modules.discordConfigMissing', channel_changed: 'modules.channelSaveFirst' };
+    const botErrors = ['missing_token', 'wrong_guild', 'invalid_channel_type', 'invalid_token', 'channel_not_found', 'rate_limited', 'connection_error', 'certificate_error', 'discord_error'];
+    return messages[error.code] || (botErrors.includes(error.code) ? `modules.botStatus.${error.code}` : 'modules.channelSetupError');
+  }
+  async function openChannelSetup() {
+    if (busy) return;
+    setBusy(true); setChannelError('');
+    try {
+      const result = await apiRequest('/api/settings/modules/mapper/discord-channel/');
+      if (result.channelId !== savedChannel) { setChannelError('modules.channelSaveFirst'); return; }
+      setChannelTarget(result);
+      setModule((current) => ({ ...current, discordChannel: { name: result.channelName, configured: result.configured } }));
+      setChannelConfirm(true);
+    } catch (error) { setChannelError(channelFailure(error)); }
+    finally { setBusy(false); }
+  }
+  async function setupChannel() {
+    if (busy) return;
+    setBusy(true); setChannelError(''); setChannelConfigured('');
+    try {
+      const result = await apiRequest('/api/settings/modules/mapper/discord-channel/', { method: 'POST', body: { confirmed: true, channelId: channelTarget.channelId } });
+      setChannelConfigured(result.channelName);
+      setChannelConfirm(false);
+      setModule((current) => ({ ...current, botAvailable: false, botStatus: 'checking', discordChannel: { name: result.channelName, configured: true } }));
+    } catch (error) {
+      setChannelError(channelFailure(error));
+    } finally { setBusy(false); }
+  }
+
   return <main className="board-library settings-page">
+    <dialog ref={channelDialog} className="module-confirm-dialog" role="alertdialog" aria-labelledby="channel-confirm-title" aria-describedby="channel-confirm-hint" onCancel={(event) => { if (busy) event.preventDefault(); else setChannelConfirm(false); }} onClick={(event) => {
+      if (busy || event.target !== event.currentTarget) return;
+      const bounds = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) setChannelConfirm(false);
+    }}>
+      <h2 id="channel-confirm-title">{t('modules.channelConfirmTitle')}</h2>
+      <p id="channel-confirm-hint">{t('modules.channelConfirmHint', { channel: channelTarget?.channelName || '' })}</p>
+      <p>{t('modules.channelConfirmImpact')}</p>
+      {channelError && <p className="library-error" role="alert">{t(channelError)}</p>}
+      <div className="module-confirm-actions">
+        <button ref={cancelChannel} type="button" className="button secondary" disabled={busy} onClick={() => setChannelConfirm(false)}>{t('common:actions.cancel')}</button>
+        <button type="button" className="button primary" disabled={busy} onClick={setupChannel}>{t(busy ? 'modules.channelConfiguring' : channelTarget?.configured ? 'modules.reconfigureChannel' : 'modules.configureChannel')}</button>
+      </div>
+    </dialog>
     <dialog ref={toggleDialog} className="module-confirm-dialog" role="alertdialog" aria-labelledby="module-confirm-title" aria-describedby="module-confirm-description" onCancel={() => setPendingToggle(null)} onClick={(event) => {
       if (event.target === event.currentTarget) setPendingToggle(null);
     }}>
@@ -156,19 +230,29 @@ export function SettingsPage({ onChanged }) {
       {iconSaved && <p className="members-saved" role="status">{t('branding.saved')}</p>}
     </section>}
     {!module && !error && <p className="muted" role="status">{t('modules.loading')}</p>}
-    {module && <section className={`library-panel module-panel${module.enabled ? "" : " module-off"}`}>
+    {module && <section className={`library-panel module-panel${module.enabled ? " module-can-collapse" : " module-off"}`} onClick={(event) => {
+      if (!module.enabled || busy || event.target.closest('.module-toggle, .module-parameters, button, input, select, label, a')) return;
+      changeExpansion(!expanded);
+    }}>
       <form onSubmit={save}>
         <div className="module-heading">
           <span className="module-icon"><Icon name="compass" size={28} /></span>
           <div><h2>{t('page.product')}</h2><p>{t('modules.mapperDescription')}</p></div>
           <Switch className="module-toggle" label={t('modules.enabled')} controls="mapper-module-options"
             checked={module.enabled} disabled={busy} onChange={(event) => setPendingToggle(event.target.checked)} />
+          <button type="button" className={`icon-button module-collapse${optionsOpen ? ' is-open' : ''}`} aria-expanded={optionsOpen} aria-controls="mapper-module-options" aria-label={t(optionsOpen ? 'modules.collapseOptions' : 'modules.expandOptions', { module: t('page.product') })} title={t(optionsOpen ? 'modules.collapseOptions' : 'modules.expandOptions', { module: t('page.product') })} disabled={busy || !module.enabled} onClick={() => changeExpansion(!expanded)}><Icon name="chevron" size={20} /></button>
         </div>
-        <p className="module-preservation muted">{t('modules.preservationHint')}</p>
-        <div className={`module-parameters${module.enabled ? " is-open" : ""}`} id="mapper-module-options" aria-hidden={!module.enabled} inert={!module.enabled}>
+        {(optionsOpen || !module.enabled) && <p className="module-preservation muted">{t('modules.preservationHint')}</p>}
+        <div className={`module-parameters${optionsOpen ? " is-open" : ""}`} id="mapper-module-options" aria-hidden={!optionsOpen} inert={!optionsOpen}>
           <div className="module-parameters-inner">
-        <fieldset className="module-options" disabled={busy || !module.enabled}>
-          <div className="member-heading"><h3>{t('modules.discordTitle')}</h3><span className={`member-badge${module.botAvailable ? ' bot-ready' : ''}`}>{t(`modules.botStatus.${module.botStatus || 'checking'}`)}</span></div>
+        <fieldset className="module-options" disabled={busy || !optionsOpen}>
+          <div className="discord-notification-heading">
+            <div><h3>{t('modules.discordTitle')}</h3>{module.discordChannel?.name && <span className="discord-channel-name">#{module.discordChannel.name}</span>}</div>
+            <div className="discord-notification-controls">
+              <span className={`member-badge${module.botAvailable ? ' bot-ready' : ''}`}>{t(`modules.botStatus.${module.botStatus || 'checking'}`)}</span>
+              <button type="button" className="button secondary" disabled={busy || !savedChannel || module.settings.discordChannelId !== savedChannel} onClick={openChannelSetup}>{t(module.discordChannel?.configured ? 'modules.reconfigureChannel' : 'modules.configureChannel')}</button>
+            </div>
+          </div>
           <p className="module-bot-hint">{t('modules.botHint')}</p>
           <div className="module-fields">
             <label className="board-name-label">{t('modules.channelId')}
@@ -179,6 +263,11 @@ export function SettingsPage({ onChanged }) {
             </label>
           </div>
           <p className="muted">{t('modules.channelHint')}</p>
+          <div className="channel-setup-feedback">
+            <p className="muted">{t(module.settings.discordChannelId !== savedChannel || !savedChannel ? 'modules.channelSaveFirst' : 'modules.channelSetupHint')}</p>
+            {channelError && !channelConfirm && <p className="library-error" role="alert">{t(channelError)}</p>}
+            {channelConfigured && <p className="module-saved-status" role="status">{t('modules.channelConfigured', { name: channelConfigured })}</p>}
+          </div>
           <div className="module-save-actions">
             <button className="button primary" disabled={busy}>{t(busy ? 'modules.saving' : 'modules.save')}</button>
             {saved && <span className="module-saved-status" role="status">{t('modules.saved')}</span>}

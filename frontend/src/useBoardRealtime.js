@@ -35,6 +35,12 @@ export function useBoardRealtime(board, snapshot, callbacks) {
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          if (message.type === 'board.deleted') {
+            stopped = true;
+            engine.receive({ type: 'denied' });
+            handlers.current.onBoardDeleted?.();
+            return;
+          }
           if (message.type === "module.disabled") {
             stopped = true;
             engine.receive({ type: "denied" });
@@ -50,6 +56,12 @@ export function useBoardRealtime(board, snapshot, callbacks) {
       socket.onclose = (event) => {
         if (stopped) return;
         engine.disconnected();
+        if (event.code === 4404) {
+          stopped = true;
+          engine.receive({ type: 'denied' });
+          handlers.current.onBoardDeleted?.();
+          return;
+        }
         if (event.code === 4403) {
           engine.receive({ type: "denied" });
           return;

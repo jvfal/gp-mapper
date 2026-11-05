@@ -39,12 +39,14 @@ class GuildRole(models.Model):
     is_default = models.BooleanField(default=False)
     can_view_guild_maps = models.BooleanField(default=True)
     can_create_guild_maps = models.BooleanField(default=False)
+    can_delete_guild_maps = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['name']
         constraints = [
             models.UniqueConstraint(fields=['is_default'], condition=models.Q(is_default=True), name='mapper_one_default_role'),
             models.CheckConstraint(condition=models.Q(can_create_guild_maps=False) | models.Q(can_view_guild_maps=True), name='mapper_create_requires_view'),
+            models.CheckConstraint(condition=models.Q(can_delete_guild_maps=False) | models.Q(can_view_guild_maps=True), name='mapper_delete_requires_view'),
         ]
 
     def __str__(self):
@@ -81,6 +83,8 @@ class MapperModuleSettings(models.Model):
     bot_checked_at = models.DateTimeField(null=True, blank=True)
     bot_last_error = models.CharField(max_length=40, blank=True)
     bot_retry_at = models.DateTimeField(null=True, blank=True)
+    discord_channel_name = models.CharField(max_length=100, blank=True)
+    discord_channel_configured_at = models.DateTimeField(null=True, blank=True)
 
 
 class Board(models.Model):
@@ -136,7 +140,18 @@ class BoardMutation(models.Model):
         constraints = [models.UniqueConstraint(fields=['board', 'mutation_id'], name='mapper_mutation_unique')]
 
 
-class BoardNode(models.Model):
+class GraphAttribution(models.Model):
+    # Historical items have no known author/date; do not invent attribution.
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class BoardNode(GraphAttribution):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='nodes')
     road_map = models.ForeignKey('catalog.RoadMap', on_delete=models.PROTECT)
     x = models.FloatField(default=0)
@@ -146,7 +161,7 @@ class BoardNode(models.Model):
         constraints = [models.UniqueConstraint(fields=['board', 'road_map'], name='mapper_node_unique_map')]
 
 
-class BoardConnection(models.Model):
+class BoardConnection(GraphAttribution):
     class Handle(models.TextChoices):
         TOP = 'top', 'Top'
         BOTTOM = 'bottom', 'Bottom'

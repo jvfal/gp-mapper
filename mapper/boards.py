@@ -5,7 +5,7 @@ import math
 from datetime import datetime, timezone
 
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.contrib.auth import get_user_model
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -14,19 +14,21 @@ from django.views.decorators.http import require_http_methods
 
 from catalog.models import RoadMap
 from .models import Board, BoardAccess, BoardConnection, BoardNode
-from .permissions import permissions, visible_boards
+from .permissions import can_delete, permissions, visible_boards
 from .broadcast import publish_board
 from .authentication import display_name, session_info
 from .roles import guild_permissions, site_access
 from .modules import mapper_enabled
+from .graph_storage import persist_graph
 
 
 def summary(board, user):
     node_count = getattr(board, 'node_count', None)
     connection_count = getattr(board, 'connection_count', None)
+    access = permissions(board, user)
     return {
         'id': str(board.pk), 'name': board.name, 'revision': board.revision,
-        'scope': board.scope, 'permissions': permissions(board, user),
+        'scope': board.scope, 'permissions': access, 'canDelete': can_delete(board, user, access),
         'isOwner': board.owner_id == user.pk,
         'updatedAt': board.updated_at.isoformat(),
         'nodeCount': board.nodes.count() if node_count is None else node_count,
@@ -34,20 +36,43 @@ def summary(board, user):
     }
 
 
+def attribution(item):
+    if not item.created_at and not item.updated_at:
+        return None
+    return {
+        'createdBy': display_name(item.created_by) if item.created_by else None,
+        'createdAt': item.created_at.isoformat() if item.created_at else None,
+        'updatedBy': display_name(item.updated_by) if item.updated_by else None,
+        'updatedAt': item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
 def state(board):
-    nodes = list(board.nodes.all())
+    authors = ('created_by__discord_account', 'updated_by__discord_account')
+    nodes = list(board.nodes.select_related(*authors))
     node_ids = {node.pk: f'map-{node.road_map_id}' for node in nodes}
     return {
         'version': 1,
         'nodes': [{'id': node_ids[node.pk], 'mapId': node.road_map_id,
-                   'position': {'x': node.x, 'y': node.y}} for node in nodes],
+                   'position': {'x': node.x, 'y': node.y}, 'audit': attribution(node)} for node in nodes],
         'edges': [{'id': edge.client_id, 'source': node_ids[edge.source_id],
                    'target': node_ids[edge.target_id], 'sourceHandle': edge.source_handle,
-                   'targetHandle': edge.target_handle, 'expiresAt': round(edge.expires_at.timestamp() * 1000)}
-                  for edge in board.connections.all()],
+                   'targetHandle': edge.target_handle, 'expiresAt': round(edge.expires_at.timestamp() * 1000),
+                   'audit': attribution(edge)}
+                  for edge in board.connections.select_related(*authors)],
         'viewport': {'x': board.viewport_x, 'y': board.viewport_y, 'zoom': board.viewport_zoom},
         'canvasWidth': board.canvas_width,
     }
+
+
+def library_summary(board, user):
+    return {**summary(board, user), 'preview': {
+        'nodes': [{'id': node.pk, 'name': node.road_map.name, 'tier': node.road_map.tier,
+                   'x': node.x, 'y': node.y} for node in board.preview_nodes],
+        'edges': [{'source': edge.source_id, 'target': edge.target_id,
+                   'sourceHandle': edge.source_handle, 'targetHandle': edge.target_handle,
+                   'expiresAt': round(edge.expires_at.timestamp() * 1000)} for edge in board.preview_edges],
+    }}
 
 
 def body(request):
@@ -130,20 +155,9 @@ def validate_state(data):
     return clean_nodes, clean_edges, (x, y, zoom, width)
 
 
-def replace_state(board, validated):
+def replace_state(board, validated, user):
     nodes, edges, viewport = validated
-    board.connections.all().delete()
-    board.nodes.exclude(road_map_id__in=[node[0] for node in nodes]).delete()
-    BoardNode.objects.bulk_create(
-        [BoardNode(board=board, road_map_id=map_id, x=x, y=y) for map_id, x, y in nodes],
-        update_conflicts=True, update_fields=['x', 'y'], unique_fields=['board', 'road_map'],
-    )
-    by_map = {node.road_map_id: node for node in board.nodes.all()}
-    BoardConnection.objects.bulk_create([
-        BoardConnection(board=board, client_id=client_id, source=by_map[source], target=by_map[target],
-                        source_handle=source_handle, target_handle=target_handle, expires_at=expires_at)
-        for client_id, source, target, source_handle, target_handle, expires_at in edges
-    ])
+    persist_graph(board, nodes, edges, user)
     board.viewport_x, board.viewport_y, board.viewport_zoom, board.canvas_width = viewport
     board.revision += 1
     board.save()
@@ -157,9 +171,12 @@ def boards(request):
     if not mapper_enabled(request.user):
         return JsonResponse({'error': 'module_disabled'}, status=403)
     if request.method == 'GET':
-        queryset = visible_boards(request.user).annotate(node_count=Count('nodes', distinct=True), connection_count=Count('connections', distinct=True))
+        queryset = visible_boards(request.user).annotate(node_count=Count('nodes', distinct=True), connection_count=Count('connections', distinct=True)).prefetch_related(
+            Prefetch('nodes', queryset=BoardNode.objects.select_related('road_map').order_by('pk'), to_attr='preview_nodes'),
+            Prefetch('connections', queryset=BoardConnection.objects.all(), to_attr='preview_edges'),
+        )
         return JsonResponse({**session_info(request),
-                             'boards': [summary(board, request.user) for board in queryset]})
+                             'boards': [library_summary(board, request.user) for board in queryset]})
     try:
         data = body(request)
         name = name_from(data)
@@ -176,7 +193,7 @@ def boards(request):
 
 
 @never_cache
-@require_http_methods(['GET', 'PUT', 'PATCH'])
+@require_http_methods(['GET', 'PUT', 'PATCH', 'DELETE'])
 def board_detail(request, board_id):
     if not site_access(request.user):
         return JsonResponse({'error': 'authentication_required'}, status=401)
@@ -186,6 +203,12 @@ def board_detail(request, board_id):
         access = permissions(board, request.user)
         if not access['canView']:
             raise Http404
+        if request.method == 'DELETE':
+            if not can_delete(board, request.user, access):
+                return JsonResponse({'error': 'permission_denied'}, status=403)
+            board.delete()
+            publish_board(board_id, event_type='board.deleted')
+            return JsonResponse({'deleted': True})
         if request.method == 'GET':
             return JsonResponse({'board': {**summary(board, request.user), 'state': state(board)}})
         if not access['canEdit'] or request.method == 'PATCH' and not access['canManage']:
@@ -200,7 +223,7 @@ def board_detail(request, board_id):
                     raise ValueError('invalid_revision')
                 if data['revision'] != board.revision:
                     return JsonResponse({'error': 'revision_conflict'}, status=409)
-                replace_state(board, validate_state(data.get('state')))
+                replace_state(board, validate_state(data.get('state')), request.user)
         except ValueError as error:
             return JsonResponse({'error': str(error)}, status=400)
         publish_board(board.pk)

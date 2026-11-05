@@ -23,7 +23,19 @@ def role_data(role):
         'id': role.pk, 'name': role.name, 'isDefault': role.is_default,
         'canViewGuildMaps': role.can_view_guild_maps,
         'canCreateGuildMaps': role.can_create_guild_maps,
+        'canDeleteGuildMaps': role.can_delete_guild_maps,
         'discordRoleId': role.discord_role_id,
+    }
+
+
+def member_profile(user):
+    account = getattr(user, 'discord_account', None)
+    return {
+        'joinedAt': user.date_joined.isoformat(),
+        'lastLoginAt': user.last_login.isoformat() if user.last_login else None,
+        'discordUsername': account.username if account else None,
+        'discordId': account.discord_id if account else None,
+        'avatarUrl': f'https://cdn.discordapp.com/avatars/{account.discord_id}/{account.avatar}.png?size=64' if account and account.avatar else None,
     }
 
 
@@ -37,6 +49,7 @@ def members(request):
         'roles': [role_data(role) for role in GuildRole.objects.all()],
         'members': [{
             'id': user.pk, 'name': display_name(user), 'isActive': user.is_active,
+            **member_profile(user),
             'isGuildMaster': any(group.name == 'Guild Master' for group in user.groups.all()),
             'isProtected': user.is_superuser or any(group.name == 'Guild Master' for group in user.groups.all()),
             'roleIds': sorted({role.pk for role in user.guild_roles.all()} | {role.pk for role in user.discord_guild_roles.all()}),
@@ -65,13 +78,20 @@ def member_approval(request, user_id):
         if not user.is_active or is_guild_master(user) or user.is_superuser:
             return JsonResponse({'error': 'protected_member'}, status=400)
         account = get_object_or_404(DiscordAccount.objects.select_for_update(), user=user)
-        if not settings.DISCORD_GUILD_ID or account.guild_id != settings.DISCORD_GUILD_ID:
+        if not settings.DISCORD_GUILD_ID:
+            return JsonResponse({'error': 'guild_not_configured'}, status=400)
+        if account.guild_id and account.guild_id != settings.DISCORD_GUILD_ID:
             return JsonResponse({'error': 'invalid_guild'}, status=400)
+        if not account.guild_id and approved:
+            # Accounts created before guild validation have no guild ID yet.
+            # Manual approval binds them locally; it does not verify a Discord role.
+            account.guild_id = settings.DISCORD_GUILD_ID
+            account.is_member = False
         account.manually_approved = approved
         account.approval_guild_id = settings.DISCORD_GUILD_ID if approved else ''
         account.approved_by = request.user if approved else None
         account.approved_at = timezone.now() if approved else None
-        account.save(update_fields=['manually_approved', 'approval_guild_id', 'approved_by', 'approved_at'])
+        account.save(update_fields=['guild_id', 'is_member', 'manually_approved', 'approval_guild_id', 'approved_by', 'approved_at'])
         if approved and not user.guild_roles.exists():
             role = GuildRole.objects.filter(is_default=True).first()
             if role:
@@ -102,9 +122,10 @@ def roles(request, role_id=None):
             if discord_id and (not discord_id.isascii() or not discord_id.isdecimal() or len(discord_id) > 20):
                 raise ValueError('invalid_discord_role_id')
             view, create = data.get('canViewGuildMaps'), data.get('canCreateGuildMaps')
+            delete = data.get('canDeleteGuildMaps', role.can_delete_guild_maps)
             if not isinstance(name, str) or not 1 <= len(name.strip()) <= 60:
                 raise ValueError('invalid_name')
-            if type(view) is not bool or type(create) is not bool or create and not view:
+            if type(view) is not bool or type(create) is not bool or type(delete) is not bool or (create or delete) and not view:
                 raise ValueError('invalid_permissions')
             if name.strip().casefold() == 'guild master':
                 raise ValueError('reserved_role')
@@ -113,6 +134,7 @@ def roles(request, role_id=None):
         except ValueError as error:
             return JsonResponse({'error': str(error)}, status=400)
         role.name, role.can_view_guild_maps, role.can_create_guild_maps = name.strip(), view, create
+        role.can_delete_guild_maps = delete
         old_discord_id = role.discord_role_id
         role.discord_role_id = discord_id
         try:

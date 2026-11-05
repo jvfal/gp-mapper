@@ -24,18 +24,18 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./styles.css";
 import { BoardAccessPanel } from "./BoardAccessPanel";
-import { AccountMenu } from "./AccountMenu";
+import { DeleteBoardDialog } from "./DeleteBoardDialog";
+import { AccountMenu, DiscordStatus } from "./AccountMenu";
 import { Brand, guildName } from "./Brand";
 import { BoardLibrary, BoardName } from "./BoardLibrary";
 import { useBoardRealtime } from "./useBoardRealtime";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Icon } from "./icons";
 import { MapSelect } from "./MapSelect";
 import { SHOW_CONNECTION_FORM } from "./config";
 import { captureMap } from "./captureMap";
 import { ConnectionCard } from "./ConnectionCard";
 import { useMapFullscreen } from "./useMapFullscreen";
-import { CatalogContext, EdgeContext, MapNode, TimedEdge } from "./MapElements";
+import { AuditContext, CatalogContext, EdgeContext, MapNode, TimedEdge } from "./MapElements";
 import { CatalogDrawer, MapInspector } from "./MapDrawer";
 import {
   connectionExists,
@@ -59,7 +59,12 @@ const initialViewport = {
 function App({ board, user, onBack, onReload, iconUrl }) {
   const { t } = useTranslation("mapper");
   const [boardMetadata, setBoardMetadata] = useState(board);
+  const audits = useMemo(() => ({
+    nodes: new Map((boardMetadata.state?.nodes || []).map((node) => [node.mapId, node.audit])),
+    edges: new Map((boardMetadata.state?.edges || []).map((edge) => [edge.id, edge.audit])),
+  }), [boardMetadata.state]);
   const [showAccess, setShowAccess] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -112,6 +117,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
   } = useBoardRealtime(board, snapshot, {
     onMetadata: setBoardMetadata,
     onModuleDisabled: () => onBack(),
+    onBoardDeleted: () => onBack(),
     onRemote: (graph) => {
         setNow(Date.now());
       const restored = restoreBoard(
@@ -518,7 +524,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
     [now, editEdge, canEdit],
   );
   return (
-    <CatalogContext.Provider value={mapById}>
+    <AuditContext.Provider value={audits}><CatalogContext.Provider value={mapById}>
       <EdgeContext.Provider value={edgeContext}>
         <div className="app-shell">
           <header className="app-header">
@@ -527,7 +533,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
               catch { setNotice({ key: "library.leaveError", kind: "error" }); }
             } : undefined} />
             <div className="header-right">
-              <LanguageSwitcher />
+              <DiscordStatus user={user} />
               <AccountMenu user={user} />
               <span className="draft-badge">
                 <span />
@@ -558,15 +564,16 @@ function App({ board, user, onBack, onReload, iconUrl }) {
               </div>
             </div>
 
-            {canManage && (
+            {(canManage || boardMetadata.canDelete) && (
               <div className="board-sharing-actions">
-                <button
+                {boardMetadata.canDelete && saveStatus !== 'denied' && <button className="button board-delete-action" onClick={() => setShowDelete(true)}><Icon name="trash" size={15} />{t('library.delete')}</button>}
+                {canManage && <button
                   className="button secondary"
                   onClick={() => setShowAccess(true)}
                 >
                   <Icon name="link" size={16} />
                   {t("sharing.title")}
-                </button>
+                </button>}
               </div>
             )}
             {/* Preserved for optional reactivation in config.js. */}
@@ -1053,6 +1060,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
           }}
         />
       )}
+      {showDelete && <DeleteBoardDialog board={boardMetadata} onClose={() => setShowDelete(false)} onDeleted={() => onBack()} />}
       {canEdit &&
         pendingConnection &&
         createPortal(
@@ -1105,7 +1113,7 @@ function App({ board, user, onBack, onReload, iconUrl }) {
           />,
           canvasShellRef.current,
         )}
-    </CatalogContext.Provider>
+    </CatalogContext.Provider></AuditContext.Provider>
   );
 }
 createRoot(document.getElementById("mapper-root")).render(

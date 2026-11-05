@@ -32,14 +32,15 @@ def site_access(user):
 
 def guild_permissions(user):
     if not site_access(user):
-        return {'canViewGuildMaps': False, 'canCreateGuildMaps': False, 'canManageMembers': False, 'canManageSettings': False}
+        return {'canViewGuildMaps': False, 'canCreateGuildMaps': False, 'canDeleteGuildMaps': False, 'canManageMembers': False, 'canManageSettings': False}
     if is_guild_master(user) or user.is_superuser:
-        return {'canViewGuildMaps': True, 'canCreateGuildMaps': True, 'canManageMembers': True, 'canManageSettings': True}
+        return {'canViewGuildMaps': True, 'canCreateGuildMaps': True, 'canDeleteGuildMaps': True, 'canManageMembers': True, 'canManageSettings': True}
     if not hasattr(user, '_mapper_guild_permissions'):
         roles = [*user.guild_roles.all(), *user.discord_guild_roles.all()]
         user._mapper_guild_permissions = {
             'canViewGuildMaps': any(role.can_view_guild_maps for role in roles),
             'canCreateGuildMaps': any(role.can_create_guild_maps for role in roles),
+            'canDeleteGuildMaps': any(role.can_delete_guild_maps for role in roles),
             'canManageMembers': False,
             'canManageSettings': False,
         }

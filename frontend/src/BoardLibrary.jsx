@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReactFlowProvider } from "@xyflow/react";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Icon } from "./icons";
 import { boardApi, libraryData } from "./boardApi";
-import { AccountMenu } from "./AccountMenu";
+import { AccountMenu, DiscordStatus } from "./AccountMenu";
 import { Brand, guildName } from "./Brand";
 import { MembersPage } from "./MembersPage";
 import { SettingsPage } from "./SettingsPage";
+import { BoardCard } from "./BoardCard";
+import { DeleteBoardDialog } from "./DeleteBoardDialog";
 
 export function BoardLibrary({ Editor }) {
-  const { t, i18n } = useTranslation("mapper");
+  const { t } = useTranslation("mapper");
+  const createDialog = useRef(null);
+  const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
   const [active, setActive] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -102,6 +106,7 @@ export function BoardLibrary({ Editor }) {
         },
       });
       setName("");
+      createDialog.current?.close();
       setActive(result.board);
       history.replaceState(null, "", `/?board=${result.board.id}`);
     } catch (error) {
@@ -127,6 +132,10 @@ export function BoardLibrary({ Editor }) {
     }
   }
 
+  const visibleBoards = (data?.boards || [])
+    .filter((board) => (filter === "all" || board.scope === filter) && board.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+    .sort((a, b) => Number(b.scope === "guild") - Number(a.scope === "guild"));
+
   if (active)
     return (
       <ReactFlowProvider key={`${active.id}:${active.revision}`}>
@@ -139,7 +148,7 @@ export function BoardLibrary({ Editor }) {
       <header className="app-header">
         <Brand iconUrl={data?.branding?.iconUrl} page={page} showMaps={Boolean(data?.user?.canAccess && data?.modules?.mapper)} onMaps={() => back("boards")} onMembers={data?.user?.permissions?.canManageMembers ? () => back("members") : undefined} />
         <div className="header-right">
-          <LanguageSwitcher />
+          <DiscordStatus user={data?.user} />
           <AccountMenu user={data?.user} />
           {data?.user?.permissions?.canManageSettings && <button className="admin-link settings-link" aria-current={page === "settings" ? "page" : undefined} onClick={() => back("settings")}>
             {t("modules.title")} <Icon name="arrow" size={15} />
@@ -148,19 +157,15 @@ export function BoardLibrary({ Editor }) {
       </header>
       {page === "members" && data?.user?.permissions?.canManageMembers ? <MembersPage /> :
       page === "settings" && data?.user?.permissions?.canManageSettings ? <SettingsPage onChanged={() => back("settings")} /> :
-      <main className="board-library">
-        <div className="page-heading">
+      <main className="board-library board-home">
+        <div className="page-heading library-page-heading">
           <div>
             <span className="eyebrow">{guildName()}</span>
             <h1>
               {t(data?.user?.canAccess && data.modules.mapper === false ? "modules.noneTitle" : "library.title")}
               <span>.</span>
             </h1>
-            <p>
-              {data?.user
-                ? t("library.welcome", { name: data.user.name })
-                : t("library.intro")}
-            </p>
+            <p>{data?.user?.canAccess && data.modules.mapper ? t("library.count", { count: data.boards.length }) : t("library.intro")}</p>
           </div>
         </div>
         {error && (
@@ -206,14 +211,22 @@ export function BoardLibrary({ Editor }) {
         )}
         {data?.user?.canAccess && data.modules.mapper && (
           <>
+            <dialog ref={createDialog} className="board-create-dialog" aria-labelledby="create-board-title" onCancel={(event) => { if (busy) event.preventDefault(); }} onClick={(event) => {
+              if (busy || event.target !== event.currentTarget) return;
+              const bounds = event.currentTarget.getBoundingClientRect();
+              if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) createDialog.current.close();
+            }}>
             <form className="board-create library-panel" onSubmit={create}>
-              <div>
-                <h2>{t("library.createTitle")}</h2>
-                <p>{t("library.createHint")}</p>
+              <div className="create-dialog-heading">
+                <div><h2 id="create-board-title">{t("library.createTitle")}</h2>
+                <p>{t("library.createHint")}</p></div>
+                <button type="button" className="icon-button" disabled={busy} aria-label={t("library.closeCreate")} onClick={() => createDialog.current.close()}><Icon name="close" /></button>
               </div>
+              {error && <p className="library-error" role="alert">{t(error)}</p>}
               <label className="board-name-label">
                 {t("library.name")}
                 <input
+                  autoFocus
                   required
                   maxLength={100}
                   value={name}
@@ -239,12 +252,10 @@ export function BoardLibrary({ Editor }) {
                 {t("library.create")}
               </button>
             </form>
-            <div className="library-list-heading">
-              <h2>{t("library.existing")}</h2>
-              <span className="muted">
-                {t("library.count", { count: data.boards.length })}
-              </span>
-            </div>
+            </dialog>
+            <div className="library-toolbar">
+              <label className="library-search"><Icon name="search" size={17} /><input aria-label={t("library.search")} placeholder={t("library.search")} value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+              <div className="library-toolbar-actions">
             <div className="board-filters" aria-label={t("sharing.filter")}>
               {["all", "guild", "private"].map((value) => (
                 <button
@@ -253,66 +264,32 @@ export function BoardLibrary({ Editor }) {
                   aria-pressed={filter === value}
                   onClick={() => setFilter(value)}
                 >
-                  {t("sharing.filter_" + value)}
+                  {t("sharing.filter_" + value)}<span>{data.boards.filter((board) => value === "all" || board.scope === value).length}</span>
                 </button>
               ))}
             </div>
-            <div className="board-grid">
-              {data.boards
-                .filter((board) => filter === "all" || board.scope === filter)
-                .map((board) => (
-                  <button
-                    className="saved-board"
-                    key={board.id}
-                    disabled={busy}
-                    onClick={() => open(board)}
-                  >
-                    <span className="saved-board-icon">
-                      <Icon name="layout" size={24} />
-                    </span>
-                    <div className="board-badges">
-                      <span>{t("sharing.filter_" + board.scope)}</span>
-                      <span>
-                        {t(
-                          board.isOwner
-                            ? "sharing.owner"
-                            : board.permissions.canManage
-                              ? "sharing.guildMaster"
-                            : board.permissions.canEdit
-                              ? "sharing.editor"
-                              : "sharing.viewer",
-                        )}
-                      </span>
-                    </div>
-                    <h3>{board.name}</h3>
-                    <p>
-                      {t("board.maps", { count: board.nodeCount })} ·{" "}
-                      {t("board.connections", { count: board.connectionCount })}
-                    </p>
-                    <small>
-                      {t("library.updated", {
-                        date: new Date(board.updatedAt).toLocaleString(
-                          i18n.resolvedLanguage,
-                        ),
-                      })}
-                    </small>
-                    <span className="saved-board-open">
-                      {t("library.open")}
-                      <Icon name="arrow" size={16} />
-                    </span>
-                  </button>
-                ))}
+                <button className="button secondary library-create-button" aria-haspopup="dialog" onClick={() => createDialog.current.showModal()}><Icon name="plus" size={14} />{t("library.create")}</button>
+              </div>
             </div>
+            <div className="board-grid">
+              {visibleBoards.map((board) => <BoardCard key={board.id} board={board} busy={busy} onOpen={open} onDelete={setDeleting} />)}
+            </div>
+            {data.boards.length > 0 && !visibleBoards.length && <div className="library-panel library-empty"><Icon name="search" size={28} /><h2>{t("library.noResults")}</h2><button className="button secondary" onClick={() => { setQuery(""); setFilter("all"); }}>{t("library.clearFilters")}</button></div>}
             {!data.boards.length && (
               <div className="library-panel library-empty">
                 <Icon name="layout" size={30} />
                 <h2>{t("library.empty")}</h2>
                 <p>{t("library.emptyHint")}</p>
+                <button className="button primary" onClick={() => createDialog.current.showModal()}><Icon name="plus" size={18} />{t("library.create")}</button>
               </div>
             )}
           </>
         )}
       </main>}
+      {deleting && <DeleteBoardDialog board={deleting} onClose={() => setDeleting(null)} onDeleted={(id) => {
+        setDeleting(null);
+        setData((current) => ({ ...current, boards: current.boards.filter((item) => item.id !== id) }));
+      }} />}
     </div>
   );
 }

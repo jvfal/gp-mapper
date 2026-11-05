@@ -1,9 +1,12 @@
 import logging
+import math
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
+from django.conf import settings
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
@@ -12,6 +15,8 @@ from .models import GuildModule, MapperModuleSettings
 from .roles import guild_permissions
 from .branding import branding_info
 from .notifications import bot_status
+from .discord_bot import BotError
+from .channel_permissions import configure_notification_channel, notification_channel
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +32,10 @@ def module_data(module):
         },
         'botAvailable': status == 'ready',
         'botStatus': status,
+        'discordChannel': {
+            'name': config.discord_channel_name if config else '',
+            'configured': bool(config and config.discord_channel_configured_at),
+        },
     }
 
 
@@ -77,8 +86,53 @@ def configure_mapper(request):
             previous_channel = MapperModuleSettings.objects.filter(module=module).values_list('discord_channel_id', flat=True).first()
             defaults = {'discord_channel_id': channel, 'warning_minutes': minutes}
             if previous_channel != channel:
-                defaults.update(bot_checked_at=None, bot_last_error='', bot_retry_at=None)
+                defaults.update(bot_checked_at=None, bot_last_error='', bot_retry_at=None,
+                                discord_channel_name='', discord_channel_configured_at=None)
             MapperModuleSettings.objects.update_or_create(module=module, defaults=defaults)
         if was_enabled and not enabled:
             transaction.on_commit(announce_disabled)
     return JsonResponse({'module': module_data(module)})
+
+
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def prepare_discord_channel(request):
+    if not guild_permissions(request.user)['canManageSettings']:
+        return JsonResponse({'error': 'permission_denied'}, status=403)
+    try:
+        data = body(request) if request.method == 'POST' else {}
+        if request.method == 'POST' and data.get('confirmed') is not True:
+            raise ValueError('confirmation_required')
+        if not settings.DISCORD_BOT_TOKEN:
+            raise ValueError('missing_token')
+        if not all(value and value.isascii() and value.isdecimal() and len(value) <= 20
+                   for value in (settings.DISCORD_GUILD_ID, settings.DISCORD_MEMBER_ROLE_ID)):
+            raise ValueError('invalid_discord_configuration')
+    except ValueError as error:
+        return JsonResponse({'error': str(error)}, status=400)
+    with transaction.atomic():
+        module = GuildModule.objects.select_for_update().filter(code='mapper', enabled=True).first()
+        if not module:
+            return JsonResponse({'error': 'module_disabled'}, status=400)
+        config = MapperModuleSettings.objects.select_for_update().filter(module=module).first()
+        if not config or not config.discord_channel_id:
+            return JsonResponse({'error': 'missing_channel'}, status=400)
+        if request.method == 'POST' and data.get('channelId') != config.discord_channel_id:
+            return JsonResponse({'error': 'channel_changed'}, status=409)
+        try:
+            if request.method == 'GET':
+                channel_name = notification_channel(config.discord_channel_id)['name']
+            else:
+                channel_name = configure_notification_channel(config.discord_channel_id)
+        except BotError as error:
+            response = JsonResponse({'error': error.code, 'retryAfter': error.retry_after}, status=429 if error.code == 'rate_limited' else 400)
+            if error.code == 'rate_limited':
+                response['Retry-After'] = str(math.ceil(error.retry_after))
+            return response
+        config.discord_channel_name = channel_name
+        if request.method == 'POST':
+            config.bot_checked_at = None
+            config.discord_channel_configured_at = timezone.now()
+        config.save(update_fields=['discord_channel_name', 'discord_channel_configured_at', 'bot_checked_at'])
+    return JsonResponse({'configured': bool(config.discord_channel_configured_at),
+                         'channelName': channel_name, 'channelId': config.discord_channel_id})

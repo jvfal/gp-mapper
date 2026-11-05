@@ -50,6 +50,8 @@ def session_info(request):
             'isGuildMaster': is_guild_master(user), 'avatarUrl': avatar,
             'canAccess': site_access(user), 'permissions': guild_permissions(user),
             'approvalPending': bool(account and user.is_active and not site_access(user)),
+            'discordNeedsRefresh': bool(account and membership_required() and account.guild_id != settings.DISCORD_GUILD_ID),
+            'discordLoginAvailable': discord_enabled(),
         }
     return {'user': info, 'auth': {'discordEnabled': discord_enabled()}, 'modules': module_states(), 'branding': branding_info()}
 

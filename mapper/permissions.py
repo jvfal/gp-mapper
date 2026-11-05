@@ -38,3 +38,11 @@ def permissions(board, user):
         member_view, member_edit = bool(grant and grant.can_view), bool(grant and grant.can_edit)
     view = board.guild_can_view or member_view
     return {'canView': view, 'canEdit': view and (board.guild_can_edit or member_edit), 'canManage': False}
+
+
+def can_delete(board, user, access=None):
+    if not (access if access is not None else permissions(board, user))['canView']:
+        return False
+    return board.owner_id == user.pk or (
+        board.scope == Board.Scope.GUILD and guild_permissions(user)['canDeleteGuildMaps']
+    )
